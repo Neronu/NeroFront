@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          # Grava a credencial no ~/.npmrc do runner (o pnpm ignora credenciais no .npmrc do projeto).
+          registry-url: https://npm.pkg.github.com
+          scope: '@neronu'
+      - run: pnpm install --frozen-lockfile
+        env:
+          # PAT com read:packages, cadastrado em Settings → Secrets → Actions.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Pacotes @neronu não podem estar linkados localmente
+        run: '! grep -E ''"@neronu/[^"]+": "(link|file):'' package.json'
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
