@@ -16,6 +16,24 @@ pnpm dev                          # http://localhost:5173
 pnpm test
 ```
 
+## Marco 1: mesa
+
+Fluxo: **Equipes** (cadastro rápido) → **Nova partida** → relacionados e titulares → **mesa**
+(`/partidas/:id/mesa`) → **conferência** e fechamento com PDF.
+
+- Login com e-mail verificado; o token fica no aparelho (30 dias), e a mesa abre do cache sem rede.
+- Cada toque é aplicado na hora com o módulo de basquete e entra numa fila guardada no aparelho;
+  a fila é enviada em ordem e reenviada sozinha quando a conexão volta (o id do evento é a chave
+  de idempotência). A partida também abre do cache sem conexão.
+- Abra a mesa alguns minutos antes do jogo: o indicador no topo mostra se está sincronizado.
+
+## Marco 2: entidade e campeonato
+
+Painel da entidade (troca no topo): equipes, atletas (e-mail e RGA opcionais), regras do basquete
+(formulário gerado pelo `rulesSchema` do módulo), membros (administrador ou mesário) e campeonatos.
+No campeonato: convites por link (`/convites/:token`), inscrições e aprovação, elencos com número
+de camisa, equipe convidada sem conta, geração da tabela, jogos, classificação, chave e rankings.
+
 ## Pacotes do NeroBack
 
 - As versões de `@neronu/*` são fixadas (sem `^`). Para atualizar: `pnpm add -E @neronu/sport-basketball@x.y.z`.
