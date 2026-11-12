@@ -1,0 +1,122 @@
+/*
+ * Tokens do sistema de design do Neronu (Identidade visual e layouts, 11/11/2026).
+ * Cores da marca (12/11/2026): azul Trojan #000443, cinza #292929, branco #f5f4f3.
+ * No escuro, o azul vira um tom claro do mesmo matiz (#a9adf5) para manter o contraste.
+ * Este é o ÚNICO arquivo com cores fixas. Componentes usam só var(--…).
+ *
+ * Pontos de quebra (custom properties não valem em media query; use os números):
+ *   bp-sm 480px · bp-md 768px · bp-lg 1024px · bp-xl 1280px
+ */
+
+:root,
+[data-theme='light'] {
+  --bg: #f5f4f3;
+  --surface: #ffffff;
+  --surface-sunken: #e9e7e3;
+  --ink: #292929;
+  --muted: #5f5d59;
+  --line: #dcd9d4;
+  --border: #8a8781;
+  --brand: #000443;
+  --brand-strong: #141a7a;
+  --on-brand: #f5f4f3;
+  --brand-soft: #e0e1ef;
+  --court: #000443;
+  --on-court: #f5f4f3;
+  --gold: #f2b705;
+  --on-gold: #292929;
+  --live: #c23808;
+  --on-live: #ffffff;
+  --positive: #0b6b7a;
+  --danger: #b3261e;
+  --focus: #000443;
+  /* Camada chapada sob modal e gaveta: ink a 40%. */
+  --scrim: rgb(41 41 41 / 0.4);
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #1c1c1c;
+  --surface: #292929;
+  --surface-sunken: #141414;
+  --ink: #f5f4f3;
+  --muted: #b3b0ab;
+  --line: #3b3b3b;
+  --border: #7d7a74;
+  --brand: #a9adf5;
+  --brand-strong: #cdd0fa;
+  --on-brand: #000443;
+  --brand-soft: #23275a;
+  --court: #0a0f5e;
+  --on-court: #f5f4f3;
+  --gold: #f2b705;
+  --on-gold: #292929;
+  --live: #ff6a33;
+  --on-live: #1c1c1c;
+  --positive: #5cc4d6;
+  --danger: #f0736a;
+  --focus: #f5f4f3;
+  --scrim: rgb(245 244 243 / 0.4);
+  color-scheme: dark;
+}
+
+/* Sem escolha salva (data-theme ausente): segue o aparelho. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #1c1c1c;
+    --surface: #292929;
+    --surface-sunken: #141414;
+    --ink: #f5f4f3;
+    --muted: #b3b0ab;
+    --line: #3b3b3b;
+    --border: #7d7a74;
+    --brand: #a9adf5;
+    --brand-strong: #cdd0fa;
+    --on-brand: #000443;
+    --brand-soft: #23275a;
+    --court: #0a0f5e;
+    --on-court: #f5f4f3;
+    --gold: #f2b705;
+    --on-gold: #292929;
+    --live: #ff6a33;
+    --on-live: #1c1c1c;
+    --positive: #5cc4d6;
+    --danger: #f0736a;
+    --focus: #f5f4f3;
+    --scrim: rgb(245 244 243 / 0.4);
+    color-scheme: dark;
+  }
+}
+
+:root {
+  /* Espaço */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Raios */
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-lg: 12px;
+
+  /* Medidas de layout */
+  --content-max: 1200px;
+  --reading-max: 720px;
+  --sidebar-w: 248px;
+  --topbar-h: 56px;
+  --bottomnav-h: 64px;
+  --touch-min: 44px;
+
+  /* Famílias */
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-sans: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-stat: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* Transição: só cor, até 150ms. */
+  --transition-color: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}

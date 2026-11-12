@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Button, Card, Notice, PageHeader, TextField } from '../../components/ui';
 import { api, errorMessage, HttpError } from '../../lib/api/client';
 import { useSession } from '../../lib/session';
 
@@ -10,6 +11,7 @@ export function Register() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const [resent, setResent] = useState(false);
   const session = useSession();
   const navigate = useNavigate();
 
@@ -34,62 +36,69 @@ export function Register() {
 
   if (sent) {
     return (
-      <section className="card narrow stack">
-        <h1>Confirme seu e-mail</h1>
-        <p>
-          Enviamos um link para <strong>{email}</strong>. Abra-o para ativar a conta; ele vale por
-          48 horas.
-        </p>
-        <button className="link" onClick={() => api.resendVerification(email)}>
-          Reenviar o link
-        </button>
-      </section>
+      <div className="ui-stack">
+        <PageHeader title="Confirme seu e-mail" />
+        <Card className="ui-stack">
+          <p>
+            Enviamos um link para <strong>{email}</strong>. Abra-o para ativar a conta; ele vale por
+            48 horas.
+          </p>
+          {resent && <Notice tone="positive">Link reenviado.</Notice>}
+          <div>
+            <Button
+              variant="quiet"
+              onClick={() => api.resendVerification(email).then(() => setResent(true))}
+            >
+              Reenviar o link
+            </Button>
+          </div>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <section className="card narrow">
-      <h1>Criar conta</h1>
-      <form onSubmit={submit} className="stack">
-        <label>
-          Nome
-          <input
+    <div className="ui-stack">
+      <PageHeader
+        title="Criar conta"
+        meta="Toda conta é de atleta: acompanhe seus campeonatos e estatísticas. Se você foi convidado(a) por uma atlética, use o e-mail do convite."
+      />
+      <Card>
+        <form onSubmit={submit} className="ui-form">
+          <TextField
+            label="Nome"
             autoComplete="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
           />
-        </label>
-        <label>
-          E-mail
-          <input
+          <TextField
+            label="E-mail"
             type="email"
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-        </label>
-        <label>
-          Senha
-          <input
+          <TextField
+            label="Senha"
             type="password"
             autoComplete="new-password"
             minLength={8}
+            help="Mínimo de 8 caracteres."
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-        </label>
-        <p className="muted small">Mínimo de 8 caracteres.</p>
-        {error && <p className="status-error">{error}</p>}
-        <button type="submit" className="primary">
-          Criar conta
-        </button>
-        <p className="muted small">
-          Já tem conta? <Link to="/entrar">Entrar</Link>
-        </p>
-      </form>
-    </section>
+          {error && <Notice tone="danger">{error}</Notice>}
+          <Button type="submit" variant="primary" block>
+            Criar conta
+          </Button>
+          <p className="t-small t-muted">
+            Já tem conta? <Link to="/entrar">Entre</Link>
+          </p>
+        </form>
+      </Card>
+    </div>
   );
 }

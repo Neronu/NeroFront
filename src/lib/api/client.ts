@@ -14,8 +14,8 @@ import {
   type PutRosterRequest,
   type Team,
   type TeamDetail,
-} from '@neronu/api-contract';
-import type * as C from '@neronu/api-contract';
+} from './contract';
+import type * as C from './contract';
 import { API_URL } from '../env';
 import { store } from '../storage';
 
@@ -34,12 +34,16 @@ export function setUnauthorizedHandler(fn: (() => void) | null): void {
   onUnauthorized = fn;
 }
 
+export type { MyChampionship } from './contract';
+
 /** Resposta de erro da API (4xx/5xx). */
 export class HttpError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
     message: string,
+    /** Detalhes do erro, quando a API manda (ex.: código do módulo do esporte). */
+    readonly details?: unknown,
   ) {
     super(message);
   }
@@ -75,6 +79,7 @@ async function request<T>(
       res.status,
       err?.code ?? 'http_error',
       err?.message ?? `HTTP ${res.status}`,
+      err?.details,
     );
   }
   if (res.status === 204) return undefined as T;
@@ -129,6 +134,10 @@ export const api = {
     request<C.Championship[]>('GET', `/championships${q({ organizationId: orgId })}`),
   createChampionship: (body: C.CreateChampionshipRequest) =>
     request<C.Championship>('POST', '/championships', body),
+  /** Público: o código é o slug, sem diferenciar maiúsculas. */
+  championshipByCode: (code: string) =>
+    request<C.Championship>('GET', `/public/championships/${encodeURIComponent(code.trim())}`),
+  myChampionships: () => request<C.MyChampionship[]>('GET', '/me/championships'),
   championship: (id: string) => request<C.ChampionshipDetail>('GET', `/championships/${id}`),
   updateChampionship: (id: string, body: C.UpdateChampionshipRequest) =>
     request<C.Championship>('PATCH', `/championships/${id}`, body),
@@ -181,10 +190,51 @@ export const api = {
   close: (id: string) => request<CloseMatchResponse>('POST', `/matches/${id}/close`),
   openSheet: (id: string, revision?: number) =>
     openAuthenticated(`/matches/${id}/sheet${revision ? `?revision=${revision}` : ''}`),
+
+  // E9 — páginas públicas
+  highlights: (id: string) =>
+    request<C.ChampionshipHighlights>('GET', `/championships/${id}/highlights`),
+  publicAthlete: (id: string) => request<C.PublicAthlete>('GET', `/public/athletes/${id}`),
+  setPublicationConsent: (orgId: string, granted: boolean) =>
+    request<C.Organization>('PUT', `/organizations/${orgId}/publication-consent`, { granted }),
+  // E10 — identidade do atleta
+  meAthleteChampionships: () =>
+    request<C.MeAthleteChampionshipsResponse>('GET', '/me/athlete/championships'),
+  meAthleteStats: () => request<C.MeStatsResponse>('GET', '/me/athlete/stats'),
+  createTransfer: (teamId: string) =>
+    request<C.TeamTransferInfo>('POST', `/teams/${teamId}/transfer`),
+  transfer: (token: string) => request<C.TransferPreview>('GET', `/transfers/${token}`),
+  acceptTransfer: (token: string, body: C.AcceptTransferRequest) =>
+    request<C.TeamTransferInfo>('POST', `/transfers/${token}/accept`, body),
+  // Equipes do atleta e convites por e-mail
+  createMyTeam: (body: C.CreateMyTeamRequest) => request<Team>('POST', '/me/teams', body),
+  myTeams: () => request<C.MyTeam[]>('GET', '/me/teams'),
+  teamInvites: (teamId: string) => request<C.TeamInvite[]>('GET', `/teams/${teamId}/invites`),
+  inviteToTeam: (teamId: string, body: C.CreateTeamInviteRequest) =>
+    request<C.TeamInvite>('POST', `/teams/${teamId}/invites`, body),
+  cancelTeamInvite: (id: string) => request<void>('DELETE', `/team-invites/${id}`),
+  myTeamInvites: () => request<C.TeamInvite[]>('GET', '/me/team-invites'),
+  acceptTeamInvite: (id: string) => request<C.MyTeam>('POST', `/team-invites/${id}/accept`),
+  declineTeamInvite: (id: string) => request<void>('POST', `/team-invites/${id}/decline`),
+  // Admin da plataforma (consultas só leitura; `q` busca por nome, e-mail ou código)
+  adminUsers: (search = '') => request<C.AdminUser[]>('GET', `/admin/users${q({ q: search })}`),
+  adminOrganizations: (search = '') =>
+    request<C.AdminOrganization[]>('GET', `/admin/organizations${q({ q: search })}`),
+  adminChampionships: (search = '') =>
+    request<C.AdminChampionship[]>('GET', `/admin/championships${q({ q: search })}`),
+  // E11 — retificação
+  sheets: (id: string) => request<C.MatchSheetRevision[]>('GET', `/matches/${id}/sheets`),
+  rectify: (id: string, body: C.RectifyMatchRequest) =>
+    request<CloseMatchResponse>('POST', `/matches/${id}/rectifications`, body),
+};
+
+/** Mensagens para códigos em que a da API não serve ao usuário (as demais já vêm em português). */
+const CODE_MESSAGES: Partial<Record<C.ApiErrorCode, string>> = {
+  rate_limited: 'Muitas tentativas seguidas. Aguarde um minuto e tente de novo.',
 };
 
 export function errorMessage(err: unknown): string {
-  if (err instanceof HttpError) return err.message;
+  if (err instanceof HttpError) return CODE_MESSAGES[err.code as C.ApiErrorCode] ?? err.message;
   if (err instanceof NetworkError) return 'Sem conexão com a API.';
   return err instanceof Error ? err.message : String(err);
 }

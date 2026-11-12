@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
+import { Button, ErrorState, PageHeader, Skeleton } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import { useSession } from '../../lib/session';
 
@@ -23,16 +24,20 @@ export function VerifyEmail() {
   }, [params, signIn, navigate]);
 
   return (
-    <section className="card narrow stack">
-      <h1>Confirmação de e-mail</h1>
+    <div className="ui-stack">
+      <PageHeader title="Confirmação de e-mail" />
       {error ? (
         <>
-          <p className="status-error">{error}</p>
-          <Link to="/entrar">Ir para o login</Link>
+          <ErrorState title="Erro ao confirmar" message={error} />
+          <div>
+            <Button to="/entrar" variant="secondary">
+              Ir para o login
+            </Button>
+          </div>
         </>
       ) : (
-        <p className="muted">Confirmando…</p>
+        <Skeleton lines={2} />
       )}
-    </section>
+    </div>
   );
 }

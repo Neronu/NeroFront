@@ -1,82 +1,112 @@
-import type { ChampionshipDetail } from '@neronu/api-contract';
-import { useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router';
+import type { ChampionshipDetail } from '../../lib/api/contract';
+import { useParams, useSearchParams } from 'react-router';
+import {
+  Badge,
+  Button,
+  ErrorState,
+  PageHeader,
+  Skeleton,
+  TabPanel,
+  Tabs,
+} from '../../components/ui';
 import { api } from '../../lib/api/client';
 import { formatDateTime } from '../../lib/dates';
+import { championshipCode, sportName } from '../../lib/format';
 import { useAsync } from '../../lib/useAsync';
-import { BracketTab, LeaderboardsTab, StandingsTab } from './ResultsTabs';
-import { MatchesTab } from './MatchesTab';
-import { RegistrationsTab } from './RegistrationsTab';
+import { ResultsTab } from './ResultsTab';
+import { StandingsTab } from './StandingsTab';
+import { StatsTab } from './StatsTab';
+import { TeamsTab } from './TeamsTab';
 
 const TABS = [
-  ['inscricoes', 'Inscrições'],
-  ['jogos', 'Jogos'],
-  ['classificacao', 'Classificação'],
-  ['chave', 'Chave'],
-  ['rankings', 'Rankings'],
+  { key: 'resultados', label: 'Resultados' },
+  { key: 'classificacao', label: 'Classificação' },
+  { key: 'estatisticas', label: 'Estatísticas' },
+  { key: 'equipes', label: 'Equipes' },
 ] as const;
-type Tab = (typeof TABS)[number][0];
+export type Tab = (typeof TABS)[number]['key'];
 
-const STATUS = {
-  registration: 'Inscrições abertas',
-  running: 'Em andamento',
-  finished: 'Encerrado',
+/** Valores de `?aba=` anteriores à identidade visual, para não quebrar links salvos. */
+const LEGACY_TAB: Record<string, Tab> = {
+  jogos: 'resultados',
+  chave: 'classificacao',
+  rankings: 'estatisticas',
+  inscricoes: 'equipes',
+};
+
+export function resolveTab(param: string | null, status: ChampionshipDetail['status']): Tab {
+  if (param && TABS.some((t) => t.key === param)) return param as Tab;
+  if (param && LEGACY_TAB[param]) return LEGACY_TAB[param];
+  // Com inscrições abertas ainda não há jogos: abre nas equipes.
+  return status === 'registration' ? 'equipes' : 'resultados';
+}
+
+export const CHAMPIONSHIP_STATUS: Record<
+  ChampionshipDetail['status'],
+  { label: string; tone: 'neutral' | 'closed' }
+> = {
+  registration: { label: 'Inscrições abertas', tone: 'neutral' },
+  running: { label: 'Em andamento', tone: 'neutral' },
+  finished: { label: 'Encerrado', tone: 'closed' },
 };
 
 export function ChampionshipPage() {
   const { id = '' } = useParams();
   const [detail, reload] = useAsync(() => api.championship(id), id);
   const [params, setParams] = useSearchParams();
-  const [tab, setTab] = useState<Tab>((params.get('aba') as Tab) ?? 'inscricoes');
 
-  if (detail.status === 'loading') return <p className="muted">Carregando…</p>;
-  if (detail.status === 'error') return <p className="status-error">{detail.message}</p>;
-  const ch: ChampionshipDetail = detail.data;
+  if (detail.status === 'loading') return <Skeleton lines={6} />;
+  if (detail.status === 'error') return <ErrorState message={detail.message} onRetry={reload} />;
+  const ch = detail.data;
+  const tab = resolveTab(params.get('aba'), ch.status);
+  const status = CHAMPIONSHIP_STATUS[ch.status];
 
-  const select = (t: Tab) => {
-    setTab(t);
-    setParams({ aba: t }, { replace: true });
-  };
+  const meta = [
+    `Organização: ${ch.organizer.name}`,
+    `Código: ${championshipCode(ch.slug)}`,
+    ch.startsAt && `Início ${formatDateTime(ch.startsAt)}`,
+    ch.rosterLockAt &&
+      (ch.rosterLocked
+        ? 'Elencos travados'
+        : `Elencos travam em ${formatDateTime(ch.rosterLockAt)}`),
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <div className="stack">
-      <section className="card stack tight">
-        <div className="row between">
-          <h1>{ch.name}</h1>
-          <span className="badge">{STATUS[ch.status]}</span>
+    <div className="ui-stack ui-stack--section">
+      {/* Cabeçalho só em texto sobre bg, igual em todas as abas. Sem bloco de cor. */}
+      <div className="ui-stack">
+        <PageHeader
+          eyebrow={sportName(ch.sportKey)}
+          title={ch.name}
+          meta={meta}
+          action={
+            <Button to={`/campeonatos/${id}/regras`} variant="quiet">
+              {ch.canManage ? 'Regras do campeonato' : 'Ver regras'}
+            </Button>
+          }
+        />
+        <div>
+          <Badge tone={status.tone}>{status.label}</Badge>
         </div>
-        <p className="muted small">
-          Organização: {ch.organizer.name}
-          {ch.startsAt && ` · início ${formatDateTime(ch.startsAt)}`}
-          {ch.rosterLockAt &&
-            ` · elencos ${ch.rosterLocked ? 'travados' : `travam em ${formatDateTime(ch.rosterLockAt)}`}`}
-        </p>
-        <p className="small">
-          <Link to={`/campeonatos/${id}/regras`}>
-            {ch.canManage ? 'Regras do campeonato' : 'Ver regras'}
-          </Link>
-        </p>
-      </section>
-
-      <div className="tabs" role="tablist">
-        {TABS.map(([key, label]) => (
-          <button
-            key={key}
-            role="tab"
-            aria-selected={tab === key}
-            className={tab === key ? 'on' : ''}
-            onClick={() => select(key)}
-          >
-            {label}
-          </button>
-        ))}
       </div>
 
-      {tab === 'inscricoes' && <RegistrationsTab ch={ch} onChange={reload} />}
-      {tab === 'jogos' && <MatchesTab ch={ch} onChange={reload} />}
-      {tab === 'classificacao' && <StandingsTab id={id} />}
-      {tab === 'chave' && <BracketTab id={id} />}
-      {tab === 'rankings' && <LeaderboardsTab id={id} />}
+      <div className="ui-stack">
+        <Tabs
+          label="Seções do campeonato"
+          idPrefix="ch"
+          items={TABS}
+          value={tab}
+          onChange={(t) => setParams({ aba: t }, { replace: true })}
+        />
+        <TabPanel tabKey={tab} idPrefix="ch">
+          {tab === 'resultados' && <ResultsTab ch={ch} onChange={reload} />}
+          {tab === 'classificacao' && <StandingsTab id={id} />}
+          {tab === 'estatisticas' && <StatsTab id={id} />}
+          {tab === 'equipes' && <TeamsTab ch={ch} onChange={reload} />}
+        </TabPanel>
+      </div>
     </div>
   );
 }

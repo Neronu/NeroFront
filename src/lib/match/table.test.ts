@@ -1,4 +1,4 @@
-import type { MatchStateResponse, PostEventRequest, StoredEvent } from '@neronu/api-contract';
+import type { MatchStateResponse, PostEventRequest, StoredEvent } from '../api/contract';
 import { defaultRules } from '@neronu/sport-basketball';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpError, NetworkError } from '../api/client';
@@ -68,6 +68,7 @@ class FakeApi {
         type: e.type,
         payload: e.payload,
         recordedAt: e.recordedAt ?? null,
+        revision: 1,
       };
       this.events.push(stored);
     }

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
+import { Button, Card, Notice, PageHeader, TextField } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import { fromLocalInput } from '../../lib/dates';
 import { useOrg } from '../../lib/session';
@@ -7,6 +8,7 @@ import { useOrg } from '../../lib/session';
 export function NewChampionship() {
   const { org } = useOrg();
   const [name, setName] = useState('');
+  const [code, setCode] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [rosterLockAt, setRosterLockAt] = useState('');
   const [error, setError] = useState('');
@@ -19,6 +21,7 @@ export function NewChampionship() {
         organizationId: org.id,
         name,
         sportKey: 'basketball',
+        ...(code.trim() ? { slug: code.trim().toLowerCase() } : {}),
         ...(startsAt ? { startsAt: fromLocalInput(startsAt)! } : {}),
         ...(rosterLockAt ? { rosterLockAt: fromLocalInput(rosterLockAt)! } : {}),
       });
@@ -29,42 +32,56 @@ export function NewChampionship() {
   };
 
   return (
-    <section className="card narrow">
-      <h1>Novo campeonato</h1>
-      <form onSubmit={submit} className="stack">
-        <label>
-          Nome
-          <input
+    <div className="ui-stack ui-stack--section lyt-reading">
+      <PageHeader
+        title="Novo campeonato"
+        meta={`O campeonato nasce com as regras de basquete da ${org.name}; você pode ajustá-las depois.`}
+      />
+      <Card>
+        <form onSubmit={submit} className="ui-form">
+          <TextField
+            label="Nome"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Copa das Atléticas 2026"
             required
           />
-        </label>
-        <label>
-          Início
-          <input
-            type="datetime-local"
-            value={startsAt}
-            onChange={(e) => setStartsAt(e.target.value)}
+          <TextField
+            label="Código (opcional)"
+            help="Quem tiver o código encontra o campeonato. Letras, números e hífen; se vazio, geramos a partir do nome."
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder="CIA-2026"
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            pattern="[A-Za-z0-9]+(-[A-Za-z0-9]+)*"
+            minLength={3}
+            maxLength={60}
           />
-        </label>
-        <label>
-          Trava dos elencos
-          <input
-            type="datetime-local"
-            value={rosterLockAt}
-            onChange={(e) => setRosterLockAt(e.target.value)}
-          />
-        </label>
-        <p className="muted small">
-          O campeonato nasce com as regras de basquete da {org.name}; você pode ajustá-las depois.
-        </p>
-        {error && <p className="status-error">{error}</p>}
-        <button type="submit" className="primary">
-          Criar campeonato
-        </button>
-      </form>
-    </section>
+          <div className="ui-form-row">
+            <TextField
+              label="Início"
+              type="datetime-local"
+              value={startsAt}
+              onChange={(e) => setStartsAt(e.target.value)}
+            />
+            <TextField
+              label="Trava dos elencos"
+              type="datetime-local"
+              help="Depois disso, as equipes não mudam o elenco inscrito."
+              value={rosterLockAt}
+              onChange={(e) => setRosterLockAt(e.target.value)}
+            />
+          </div>
+          {error && <Notice tone="danger">{error}</Notice>}
+          <div className="ui-savebar">
+            <Button type="submit" variant="primary">
+              Criar campeonato
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
   );
 }

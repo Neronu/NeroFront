@@ -17,6 +17,9 @@ importers:
       '@neronu/sport-core':
         specifier: 1.0.0
         version: 1.0.0
+      lucide-react:
+        specifier: ^1.72.0
+        version: 1.72.0(@types/react@19.3.0)(react@19.3.1)
       react:
         specifier: ^19.3.1
         version: 19.3.1
@@ -708,6 +711,11 @@ packages:
     peerDependencies:
       '@react-pdf/renderer': ^4.9.0
       react: ^19.0.0
+    peerDependenciesMeta:
+      '@react-pdf/renderer':
+        optional: true
+      react:
+        optional: true
 
   '@neronu/sport-core@1.0.0':
     resolution: {integrity: sha512-V9TjhSa4koV7XN3Y1dXpKVNMG/DPtmPZHRO9Uz+9aoUr+l8Lt4ginGcUZlG9/zyqT5c4+RehcmcdajMQxA53Og==, tarball: https://npm.pkg.github.com/download/@neronu/sport-core/1.0.0/97695de7e15190ea0ee0ce67047a827de5c4c659}
@@ -2087,6 +2095,15 @@ packages:
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
+
+  lucide-react@1.72.0:
+    resolution: {integrity: sha512-fbF5i1GU8GODETa3Q7rXqrJrcx3iPYrQtxthom103zGx+Z0BGwKYAW9s+9435ohYJ7hQm0av0PoZcqI1CRwNrg==}
+    peerDependencies:
+      '@types/react': '*'
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
@@ -3619,18 +3636,22 @@ snapshots:
   '@neronu/sport-basketball@0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@neronu/sport-core': 1.0.0
+    optionalDependencies:
       '@react-pdf/renderer': 4.9.0(react@19.3.1)
       react: 19.3.1
 
   '@neronu/sport-core@1.0.0': {}
 
-  '@noble/ciphers@1.3.0': {}
+  '@noble/ciphers@1.3.0':
+    optional: true
 
-  '@noble/hashes@1.8.0': {}
+  '@noble/hashes@1.8.0':
+    optional: true
 
   '@oxc-project/types@0.156.0': {}
 
-  '@react-pdf/fns@3.1.3': {}
+  '@react-pdf/fns@3.1.3':
+    optional: true
 
   '@react-pdf/font@4.1.2':
     dependencies:
@@ -3638,16 +3659,19 @@ snapshots:
       fontkit: 2.0.4
       is-url: 1.2.4
       pdfkit: 0.20.1
+    optional: true
 
   '@react-pdf/hyphenate@0.1.0':
     dependencies:
       hyphen: 1.6.6
+    optional: true
 
   '@react-pdf/image@3.1.2':
     dependencies:
       '@react-pdf/svg': 1.1.1
       jay-peg: 1.1.1
       png-js: 2.0.0
+    optional: true
 
   '@react-pdf/layout@5.2.0':
     dependencies:
@@ -3661,16 +3685,20 @@ snapshots:
       emoji-regex-xs: 1.0.0
       queue: 6.0.2
       yoga-layout: 3.2.1
+    optional: true
 
-  '@react-pdf/paginate@1.0.1': {}
+  '@react-pdf/paginate@1.0.1':
+    optional: true
 
-  '@react-pdf/primitives@4.4.0': {}
+  '@react-pdf/primitives@4.4.0':
+    optional: true
 
   '@react-pdf/reconciler@2.0.0(react@19.3.1)':
     dependencies:
       object-assign: 4.1.1
       react: 19.3.1
       scheduler: 0.25.0-rc-603e6108-20241029
+    optional: true
 
   '@react-pdf/render@4.7.0':
     dependencies:
@@ -3684,6 +3712,7 @@ snapshots:
       normalize-svg-path: 1.1.0
       parse-svg-path: 0.1.2
       svg-arc-to-cubic-bezier: 3.2.0
+    optional: true
 
   '@react-pdf/renderer@4.9.0(react@19.3.1)':
     dependencies:
@@ -3701,6 +3730,7 @@ snapshots:
       prop-types: 15.8.1
       queue: 6.0.2
       react: 19.3.1
+    optional: true
 
   '@react-pdf/stylesheet@6.3.2':
     dependencies:
@@ -3710,10 +3740,12 @@ snapshots:
       hsl-to-hex: 1.0.0
       media-engine: 2.0.0
       postcss-value-parser: 4.2.0
+    optional: true
 
   '@react-pdf/svg@1.1.1':
     dependencies:
       '@react-pdf/primitives': 4.4.0
+    optional: true
 
   '@react-pdf/textkit@7.0.1':
     dependencies:
@@ -3721,12 +3753,14 @@ snapshots:
       '@react-pdf/hyphenate': 0.1.0
       bidi-js: 1.1.0
       unicode-properties: 1.4.1
+    optional: true
 
   '@react-pdf/types@2.14.0':
     dependencies:
       '@react-pdf/font': 4.1.2
       '@react-pdf/primitives': 4.4.0
       '@react-pdf/stylesheet': 6.3.2
+    optional: true
 
   '@remix-run/route-pattern@0.22.1': {}
 
@@ -3898,7 +3932,8 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.68.2':
     optional: true
 
-  '@swc/helpers@0.5.24': {}
+  '@swc/helpers@0.5.24':
+    optional: true
 
   '@testing-library/dom@10.4.2':
     dependencies:
@@ -4078,7 +4113,8 @@ snapshots:
 
   '@vitest/spy@5.1.0': {}
 
-  abs-svg-path@0.1.1: {}
+  abs-svg-path@0.1.1:
+    optional: true
 
   acorn-jsx@5.3.2(acorn@8.19.0):
     dependencies:
@@ -4165,9 +4201,11 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
-  base64-js@0.0.8: {}
+  base64-js@0.0.8:
+    optional: true
 
-  base64-js@1.5.1: {}
+  base64-js@1.5.1:
+    optional: true
 
   baseline-browser-mapping@2.11.35: {}
 
@@ -4182,6 +4220,7 @@ snapshots:
   bidi-js@1.1.0:
     dependencies:
       require-from-string: 2.0.2
+    optional: true
 
   brace-expansion@2.1.7:
     dependencies:
@@ -4194,6 +4233,7 @@ snapshots:
   brotli@1.3.3:
     dependencies:
       base64-js: 1.5.1
+    optional: true
 
   browserslist@4.29.5:
     dependencies:
@@ -4234,13 +4274,16 @@ snapshots:
 
   chai@6.3.0: {}
 
-  clone@2.1.2: {}
+  clone@2.1.2:
+    optional: true
 
-  color-name@2.1.1: {}
+  color-name@2.1.1:
+    optional: true
 
   color-string@2.1.4:
     dependencies:
       color-name: 2.1.1
+    optional: true
 
   commander@2.20.3: {}
 
@@ -4317,7 +4360,8 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
-  dfa@1.2.0: {}
+  dfa@1.2.0:
+    optional: true
 
   dom-accessibility-api@0.5.16: {}
 
@@ -4335,7 +4379,8 @@ snapshots:
 
   electron-to-chromium@1.5.479: {}
 
-  emoji-regex-xs@1.0.0: {}
+  emoji-regex-xs@1.0.0:
+    optional: true
 
   entities@9.0.0: {}
 
@@ -4520,7 +4565,8 @@ snapshots:
 
   eta@4.6.0: {}
 
-  events@3.3.0: {}
+  events@3.3.0:
+    optional: true
 
   expect-type@1.4.0: {}
 
@@ -4536,7 +4582,8 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.7
 
-  fflate@0.8.3: {}
+  fflate@0.8.3:
+    optional: true
 
   file-entry-cache@11.1.5:
     dependencies:
@@ -4570,6 +4617,7 @@ snapshots:
       tiny-inflate: 1.0.3
       unicode-properties: 1.4.1
       unicode-trie: 2.0.0
+    optional: true
 
   for-each@0.3.5:
     dependencies:
@@ -4697,8 +4745,10 @@ snapshots:
   hsl-to-hex@1.0.0:
     dependencies:
       hsl-to-rgb-for-reals: 1.1.1
+    optional: true
 
-  hsl-to-rgb-for-reals@1.1.1: {}
+  hsl-to-rgb-for-reals@1.1.1:
+    optional: true
 
   html-encoding-sniffer@7.0.0(@noble/hashes@1.8.0):
     dependencies:
@@ -4706,7 +4756,8 @@ snapshots:
     transitivePeerDependencies:
       - '@noble/hashes'
 
-  hyphen@1.6.6: {}
+  hyphen@1.6.6:
+    optional: true
 
   idb@7.1.1: {}
 
@@ -4718,7 +4769,8 @@ snapshots:
 
   indent-string@4.0.0: {}
 
-  inherits@2.0.4: {}
+  inherits@2.0.4:
+    optional: true
 
   internal-slot@1.1.0:
     dependencies:
@@ -4844,7 +4896,8 @@ snapshots:
     dependencies:
       which-typed-array: 1.1.24
 
-  is-url@1.2.4: {}
+  is-url@1.2.4:
+    optional: true
 
   is-weakmap@2.0.2: {}
 
@@ -4874,6 +4927,7 @@ snapshots:
   jay-peg@1.1.1:
     dependencies:
       restructure: 3.0.2
+    optional: true
 
   js-tokens@4.0.0: {}
 
@@ -4982,6 +5036,7 @@ snapshots:
     dependencies:
       base64-js: 0.0.8
       unicode-trie: 2.0.0
+    optional: true
 
   locate-path@6.0.0:
     dependencies:
@@ -4992,12 +5047,19 @@ snapshots:
   loose-envify@1.4.0:
     dependencies:
       js-tokens: 4.0.0
+    optional: true
 
   lru-cache@11.5.3: {}
 
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
+
+  lucide-react@1.72.0(@types/react@19.3.0)(react@19.3.1):
+    dependencies:
+      react: 19.3.1
+    optionalDependencies:
+      '@types/react': 19.3.0
 
   lz-string@1.5.0: {}
 
@@ -5011,7 +5073,8 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  media-engine@2.0.0: {}
+  media-engine@2.0.0:
+    optional: true
 
   min-indent@1.0.1: {}
 
@@ -5036,8 +5099,10 @@ snapshots:
   normalize-svg-path@1.1.0:
     dependencies:
       svg-arc-to-cubic-bezier: 3.2.0
+    optional: true
 
-  object-assign@4.1.1: {}
+  object-assign@4.1.1:
+    optional: true
 
   object-inspect@1.13.4: {}
 
@@ -5080,9 +5145,11 @@ snapshots:
 
   package-json-from-dist@1.0.1: {}
 
-  pako@0.2.9: {}
+  pako@0.2.9:
+    optional: true
 
-  parse-svg-path@0.1.2: {}
+  parse-svg-path@0.1.2:
+    optional: true
 
   parse5-parser-stream@8.1.1:
     dependencies:
@@ -5111,6 +5178,7 @@ snapshots:
       fontkit: 2.0.4
       linebreak: 1.1.0
       png-js: 2.0.0
+    optional: true
 
   picocolors@1.1.1: {}
 
@@ -5119,10 +5187,12 @@ snapshots:
   png-js@2.0.0:
     dependencies:
       fflate: 0.8.3
+    optional: true
 
   possible-typed-array-names@1.1.0: {}
 
-  postcss-value-parser@4.2.0: {}
+  postcss-value-parser@4.2.0:
+    optional: true
 
   postcss@8.5.32:
     dependencies:
@@ -5149,6 +5219,7 @@ snapshots:
       loose-envify: 1.4.0
       object-assign: 4.1.1
       react-is: 16.13.1
+    optional: true
 
   punycode@2.3.1: {}
 
@@ -5159,13 +5230,15 @@ snapshots:
   queue@6.0.2:
     dependencies:
       inherits: 2.0.4
+    optional: true
 
   react-dom@19.3.1(react@19.3.1):
     dependencies:
       react: 19.3.1
       scheduler: 0.28.0
 
-  react-is@16.13.1: {}
+  react-is@16.13.1:
+    optional: true
 
   react-is@17.0.2: {}
 
@@ -5236,7 +5309,8 @@ snapshots:
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
-  restructure@3.0.2: {}
+  restructure@3.0.2:
+    optional: true
 
   rolldown@1.2.18:
     dependencies:
@@ -5314,7 +5388,8 @@ snapshots:
     dependencies:
       xmlchars: 2.2.0
 
-  scheduler@0.25.0-rc-603e6108-20241029: {}
+  scheduler@0.25.0-rc-603e6108-20241029:
+    optional: true
 
   scheduler@0.28.0: {}
 
@@ -5456,7 +5531,8 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  svg-arc-to-cubic-bezier@3.2.0: {}
+  svg-arc-to-cubic-bezier@3.2.0:
+    optional: true
 
   temp-dir@2.0.0: {}
 
@@ -5474,7 +5550,8 @@ snapshots:
       commander: 2.20.3
       source-map-support: 0.5.21
 
-  tiny-inflate@1.0.3: {}
+  tiny-inflate@1.0.3:
+    optional: true
 
   tinybench@6.2.3: {}
 
@@ -5578,6 +5655,7 @@ snapshots:
     dependencies:
       base64-js: 1.5.1
       unicode-trie: 2.0.0
+    optional: true
 
   unicode-property-aliases-ecmascript@2.2.0: {}
 
@@ -5585,6 +5663,7 @@ snapshots:
     dependencies:
       pako: 0.2.9
       tiny-inflate: 1.0.3
+    optional: true
 
   unique-string@2.0.0:
     dependencies:
@@ -5835,7 +5914,8 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  yoga-layout@3.2.1: {}
+  yoga-layout@3.2.1:
+    optional: true
 
   zod-validation-error@4.0.2(zod@4.6.7):
     dependencies:

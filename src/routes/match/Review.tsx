@@ -1,8 +1,24 @@
 import { basketball, periodLabel } from '@neronu/sport-basketball';
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { ChevronLeft, FilePen, FileText } from 'lucide-react';
+import { useParams } from 'react-router';
+import {
+  Button,
+  Card,
+  DataTable,
+  ErrorState,
+  Icon,
+  Notice,
+  PageHeader,
+  Skeleton,
+} from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
+import type { Match } from '../../lib/api/contract';
+import { formatDateTime } from '../../lib/dates';
 import { useMatchTable } from '../../lib/match/useMatchTable';
+import { useSession } from '../../lib/session';
+import { useAsync } from '../../lib/useAsync';
+import { RectifyDrawer } from './RectifyDrawer';
 
 type Side = 'home' | 'away';
 
@@ -12,9 +28,11 @@ export function Review() {
   const { table, snapshot, loadError } = useMatchTable(id);
   const [closing, setClosing] = useState(false);
   const [error, setError] = useState('');
+  const [rectifying, setRectifying] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
 
-  if (loadError) return <p className="status-error">{loadError}</p>;
-  if (!snapshot) return <p className="muted">Carregando…</p>;
+  if (loadError) return <ErrorState message={loadError} />;
+  if (!snapshot) return <Skeleton lines={8} />;
 
   const { state, server } = snapshot;
   const closed = server.match.status === 'closed';
@@ -28,6 +46,8 @@ export function Review() {
   const periods = Array.from({ length: state.period }, (_, i) => periodLabel(state, i + 1));
   const finished = state.status === 'finished';
   const pending = snapshot.pending.length;
+  const sides = ['home', 'away'] as const;
+  const short = (p: string) => p.replace(' quarto', 'Q').replace(' tempo', 'T');
 
   const close = async () => {
     if (!confirm('Fechar a súmula? Depois disso, nenhum lance pode ser alterado na mesa.')) return;
@@ -44,120 +64,208 @@ export function Review() {
   };
 
   return (
-    <div className="stack">
-      <section className="card stack">
-        <div className="row between">
-          <h1>Conferência</h1>
-          {!closed && <Link to={`/partidas/${id}/mesa`}>‹ Voltar à mesa</Link>}
+    <div className="ui-stack ui-stack--section">
+      {!closed && (
+        <div>
+          <Button to={`/partidas/${id}/mesa`} variant="quiet">
+            <Icon icon={ChevronLeft} />
+            Voltar à mesa
+          </Button>
         </div>
-        <div className="final-score">
-          <span>{teamName('home')}</span>
-          <strong>
-            {state.teams.home.score} – {state.teams.away.score}
-          </strong>
-          <span>{teamName('away')}</span>
-        </div>
-        <table className="grid">
-          <thead>
-            <tr>
-              <th>Equipe</th>
-              {periods.map((p) => (
-                <th key={p}>{p.replace(' quarto', 'Q').replace(' tempo', 'T')}</th>
-              ))}
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(['home', 'away'] as const).map((s) => (
-              <tr key={s}>
-                <td>{teamName(s)}</td>
-                {periods.map((p, i) => (
-                  <td key={p}>{state.teams[s].scoreByPeriod[i] ?? 0}</td>
-                ))}
-                <td>
-                  <strong>{state.teams[s].score}</strong>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      )}
+      <PageHeader eyebrow="Súmula" title="Conferência" />
+
+      {/* Placar: um dos dois usos de court, sempre bloco cheio; números em gold. */}
+      <section className="review-score on-court" aria-label="Placar final">
+        <span className="review-score__team">{teamName('home')}</span>
+        <span className="t-score review-score__value">
+          {state.teams.home.score}
+          <span aria-hidden="true"> : </span>
+          <span className="sr-only"> a </span>
+          {state.teams.away.score}
+        </span>
+        <span className="review-score__team">{teamName('away')}</span>
       </section>
 
-      {(['home', 'away'] as const).map((s) => (
-        <section className="card" key={s}>
-          <h2>{teamName(s)}</h2>
-          <table className="grid">
-            <thead>
-              <tr>
-                <th>Nº</th>
-                <th className="left">Atleta</th>
-                {basketball.statsSchema.map((c) => (
-                  <th key={c.key} title={c.label}>
-                    {c.short}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {stats
-                .filter((l) => l.side === s)
-                .map((l) => (
-                  <tr key={l.athleteId}>
-                    <td>{l.number}</td>
-                    <td className="left">{names.get(l.athleteId)}</td>
-                    {basketball.statsSchema.map((c) => (
-                      <td key={c.key}>{l.stats[c.key]}</td>
-                    ))}
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+      <DataTable
+        caption="Pontos por período"
+        mode="scroll"
+        rows={[...sides]}
+        rowKey={(s) => s}
+        columns={[
+          { key: 'team', header: 'Equipe', lead: true, render: (s) => teamName(s) },
+          ...periods.map((p, i) => ({
+            key: p,
+            header: short(p),
+            title: p,
+            numeric: true,
+            render: (s: (typeof sides)[number]) => state.teams[s].scoreByPeriod[i] ?? 0,
+          })),
+          {
+            key: 'total',
+            header: 'T',
+            title: 'Total',
+            numeric: true,
+            render: (s) => <strong>{state.teams[s].score}</strong>,
+          },
+        ]}
+      />
+
+      {sides.map((s) => (
+        <section className="ui-stack" key={s} aria-labelledby={`review-${s}`}>
+          <h2 id={`review-${s}`}>{teamName(s)}</h2>
+          <DataTable
+            caption={`Estatísticas · ${teamName(s)}`}
+            mode="scroll"
+            rows={stats.filter((l) => l.side === s)}
+            rowKey={(l) => l.athleteId}
+            columns={[
+              { key: 'num', header: 'Nº', numeric: true, render: (l) => l.number },
+              { key: 'name', header: 'Atleta', lead: true, render: (l) => names.get(l.athleteId) },
+              ...basketball.statsSchema.map((c) => ({
+                key: c.key,
+                header: c.short,
+                title: c.label,
+                numeric: true,
+                render: (l: (typeof stats)[number]) => l.stats[c.key],
+              })),
+            ]}
+          />
         </section>
       ))}
 
-      <section className="card stack">
+      <Card className="ui-stack">
         {closed ? (
           <>
-            <p className="status-ok">Súmula fechada.</p>
-            {error && <p className="status-error">{error}</p>}
-            {server.sheets.map((sh) => (
-              <p key={sh.revision} className="small">
-                <button
-                  className="link"
-                  onClick={() =>
-                    api
-                      .openSheet(id, sh.revision)
-                      .catch(() => setError('Não foi possível abrir o PDF.'))
-                  }
-                >
-                  Abrir PDF · revisão {sh.revision}
-                </button>
-                <span className="muted"> · hash {sh.eventsHash.slice(0, 12)}…</span>
-                {sh.reason && <span className="muted"> · {sh.reason}</span>}
-              </p>
-            ))}
+            <Notice tone="positive">Súmula fechada.</Notice>
+            <RectifyAction match={server.match} onOpen={() => setRectifying(true)} />
+            <SheetHistory matchId={id} refreshKey={historyKey} />
           </>
         ) : (
           <>
-            {!finished && (
-              <p className="status-warn">Encerre o último período na mesa antes de fechar.</p>
-            )}
+            {!finished && <Notice>Encerre o último período na mesa antes de fechar.</Notice>}
             {pending > 0 && (
-              <p className="status-warn">
-                {pending} lance(s) ainda não enviados. Aguarde a conexão para fechar.
-              </p>
+              <Notice>{pending} lance(s) ainda não enviados. Aguarde a conexão para fechar.</Notice>
             )}
-            {error && <p className="status-error">{error}</p>}
-            <button
-              className="primary big"
-              disabled={!finished || pending > 0 || closing}
-              onClick={close}
-            >
-              {closing ? 'Fechando…' : 'Fechar súmula e gerar PDF'}
-            </button>
+            {error && <Notice tone="danger">{error}</Notice>}
+            <div className="ui-savebar">
+              <Button
+                variant="primary"
+                fluid
+                disabled={!finished || pending > 0 || closing}
+                onClick={close}
+              >
+                {closing ? 'Fechando…' : 'Fechar súmula e gerar PDF'}
+              </Button>
+            </div>
           </>
         )}
-      </section>
+      </Card>
+      {closed && rectifying && (
+        <RectifyDrawer
+          open
+          onClose={() => setRectifying(false)}
+          snapshot={snapshot}
+          onDone={() => {
+            setRectifying(false);
+            setHistoryKey((k) => k + 1);
+            void table.load();
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Só a organizadora retifica: num jogo de campeonato, quem administra o campeonato; numa
+ * partida avulsa, o admin da entidade dona. A API confere de novo.
+ */
+function useCanRectify(match: Match): boolean {
+  const { me } = useSession();
+  const [ch] = useAsync(
+    () => (match.championshipId ? api.championship(match.championshipId) : Promise.resolve(null)),
+    match.championshipId ?? '',
+  );
+  if (match.championshipId) return ch.status === 'ok' && !!ch.data?.canManage;
+  return (me?.memberships ?? []).some(
+    (m) => m.role === 'admin' && m.organization.id === match.organizationId,
+  );
+}
+
+function RectifyAction({ match, onOpen }: { match: Match; onOpen(): void }) {
+  if (!useCanRectify(match)) return null;
+  return (
+    <div>
+      <Button variant="secondary" onClick={onOpen}>
+        <Icon icon={FilePen} />
+        Retificar súmula
+      </Button>
+    </div>
+  );
+}
+
+/** Histórico de revisões (E11): cada uma com placar, motivo, autor e o PDF. */
+function SheetHistory({ matchId, refreshKey }: { matchId: string; refreshKey: number }) {
+  const [sheets, reload] = useAsync(() => api.sheets(matchId), `${matchId}:${refreshKey}`);
+  const [error, setError] = useState('');
+  if (sheets.status === 'loading') return <Skeleton lines={2} />;
+  if (sheets.status === 'error') return <ErrorState message={sheets.message} onRetry={reload} />;
+  const latest = Math.max(...sheets.data.map((s) => s.revision));
+
+  return (
+    <section className="ui-stack" aria-labelledby="sheet-history">
+      <h2 id="sheet-history">Revisões da súmula</h2>
+      {error && <Notice tone="danger">{error}</Notice>}
+      <ol className="ui-list" aria-labelledby="sheet-history">
+        {[...sheets.data].reverse().map((sh) => {
+          const changes =
+            sh.revision > 1
+              ? [
+                  sh.changes.added.length > 0 && `${sh.changes.added.length} incluído(s)`,
+                  sh.changes.voided.length > 0 && `${sh.changes.voided.length} anulado(s)`,
+                ]
+                  .filter(Boolean)
+                  .join(', ')
+              : '';
+          return (
+            <li key={sh.revision}>
+              <span className="ui-list__main">
+                <span className="ui-list__title">
+                  Revisão {sh.revision}
+                  {sh.revision === 1 ? ' · fechamento' : ' · retificação'}
+                  {sh.revision === latest && ' · atual'}
+                </span>
+                <span className="ui-list__meta">
+                  Placar{' '}
+                  <span className="t-stat">
+                    {sh.homeScore} × {sh.awayScore}
+                  </span>{' '}
+                  · {formatDateTime(sh.createdAt)}
+                  {sh.createdBy && ` · ${sh.createdBy.name}`}
+                </span>
+                {sh.reason && <span className="ui-list__meta">Motivo: {sh.reason}</span>}
+                {changes && <span className="ui-list__meta">Lances: {changes}</span>}
+              </span>
+              {sh.hasPdf ? (
+                <Button
+                  variant="quiet"
+                  onClick={() =>
+                    api
+                      .openSheet(matchId, sh.revision)
+                      .catch(() => setError('Erro ao abrir o PDF. Tente de novo.'))
+                  }
+                >
+                  <Icon icon={FileText} />
+                  PDF
+                </Button>
+              ) : (
+                <span className="t-small t-muted">PDF em geração</span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }

@@ -1,4 +1,4 @@
-import type { AuthResponse, MeResponse, MemberRole, Organization } from '@neronu/api-contract';
+import type { AuthResponse, MeResponse, MemberRole, Organization } from './api/contract';
 import {
   createContext,
   useCallback,
@@ -21,6 +21,10 @@ export interface Session {
   /** Entidade em uso no painel. */
   org: Organization | null;
   role: MemberRole | null;
+  /** Admin da plataforma (cria atléticas, consulta tudo). Todo usuário é também atleta. */
+  isSystemAdmin: boolean;
+  /** Entidade pessoal (equipes do atleta); null antes da primeira equipe. */
+  personalOrg: Organization | null;
   signIn(auth: AuthResponse): Promise<void>;
   signOut(): void;
   refresh(): Promise<void>;
@@ -90,6 +94,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       me,
       org: current?.organization ?? null,
       role: current?.role ?? null,
+      // `?? false`: /me em cache de antes do campo existir.
+      isSystemAdmin: me?.isSystemAdmin ?? false,
+      personalOrg: me?.personalOrganization ?? null,
       signIn,
       signOut,
       refresh,

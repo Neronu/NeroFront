@@ -1,6 +1,7 @@
-import type { RuleValue, SportRulesResponse } from '@neronu/api-contract';
+import type { RuleValue, SportRulesResponse } from '../lib/api/contract';
 import { useState, type FormEvent } from 'react';
 import { errorMessage } from '../lib/api/client';
+import { Button, Notice } from './ui';
 
 /**
  * Formulário gerado pelo `rulesSchema` do módulo: mostra todas as regras configuráveis,
@@ -17,7 +18,7 @@ export function RulesForm({
 }) {
   const [values, setValues] = useState<Record<string, RuleValue>>(data.rules);
   const [saved, setSaved] = useState(data);
-  const [msg, setMsg] = useState('');
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const changes = Object.fromEntries(
@@ -28,14 +29,14 @@ export function RulesForm({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    setMsg('');
+    setMsg(null);
     try {
       const res = await onSave(changes);
       setSaved(res);
       setValues(res.rules);
-      setMsg('Regras salvas.');
+      setMsg({ ok: true, text: 'Regras salvas.' });
     } catch (err) {
-      setMsg(errorMessage(err));
+      setMsg({ ok: false, text: errorMessage(err) });
     } finally {
       setBusy(false);
     }
@@ -43,76 +44,82 @@ export function RulesForm({
 
   const set = (key: string, v: RuleValue) => {
     setValues((s) => ({ ...s, [key]: v }));
-    setMsg('');
+    setMsg(null);
   };
 
   return (
-    <form onSubmit={submit} className="stack">
-      {data.fields.map((f) => {
-        const changed = values[f.key] !== data.defaults[f.key];
-        const id = `rule-${f.key}`;
-        return (
-          <div key={f.key} className={`rule ${changed ? 'changed' : ''}`}>
-            <label htmlFor={id} className="rule-label">
-              {f.label}
-              {f.help && <span className="muted small">{f.help}</span>}
-            </label>
-            {f.type === 'boolean' ? (
-              <input
-                id={id}
-                type="checkbox"
-                checked={values[f.key] === true}
-                disabled={readOnly}
-                onChange={(e) => set(f.key, e.target.checked)}
-              />
-            ) : f.type === 'integer' ? (
-              <input
-                id={id}
-                className="num-input"
-                type="number"
-                min={f.min}
-                max={f.max}
-                value={String(values[f.key] ?? '')}
-                disabled={readOnly}
-                onChange={(e) => set(f.key, Number(e.target.value))}
-              />
-            ) : (
-              <select
-                id={id}
-                value={String(values[f.key])}
-                disabled={readOnly}
-                onChange={(e) => {
-                  const opt = f.options.find((o) => String(o.value) === e.target.value)!;
-                  set(f.key, opt.value);
-                }}
-              >
-                {f.options.map((o) => (
-                  <option key={String(o.value)} value={String(o.value)}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            )}
-            {changed && (
-              <span className="muted small rule-default">
-                padrão:{' '}
-                {String(
-                  data.defaults[f.key] === true
-                    ? 'sim'
-                    : data.defaults[f.key] === false
-                      ? 'não'
-                      : data.defaults[f.key],
-                )}
-              </span>
-            )}
-          </div>
-        );
-      })}
-      {msg && <p className={msg === 'Regras salvas.' ? 'status-ok' : 'status-error'}>{msg}</p>}
+    <form onSubmit={submit} className="ui-form">
+      <div className="ui-list">
+        {data.fields.map((f) => {
+          const changed = values[f.key] !== data.defaults[f.key];
+          const id = `rule-${f.key}`;
+          return (
+            <div key={f.key} className={`ui-rule ${changed ? 'is-changed' : ''}`}>
+              <label htmlFor={id} className="ui-rule__label">
+                {f.label}
+                {f.help && <span className="ui-rule__help">{f.help}</span>}
+              </label>
+              {f.type === 'boolean' ? (
+                <input
+                  id={id}
+                  className="ui-check"
+                  type="checkbox"
+                  checked={values[f.key] === true}
+                  disabled={readOnly}
+                  onChange={(e) => set(f.key, e.target.checked)}
+                />
+              ) : f.type === 'integer' ? (
+                <input
+                  id={id}
+                  className="ui-control ui-control--num"
+                  type="number"
+                  min={f.min}
+                  max={f.max}
+                  value={String(values[f.key] ?? '')}
+                  disabled={readOnly}
+                  onChange={(e) => set(f.key, Number(e.target.value))}
+                />
+              ) : (
+                <select
+                  id={id}
+                  className="ui-control ui-rule__select"
+                  value={String(values[f.key])}
+                  disabled={readOnly}
+                  onChange={(e) => {
+                    const opt = f.options.find((o) => String(o.value) === e.target.value)!;
+                    set(f.key, opt.value);
+                  }}
+                >
+                  {f.options.map((o) => (
+                    <option key={String(o.value)} value={String(o.value)}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {changed && (
+                <span className="ui-rule__default">
+                  padrão:{' '}
+                  {String(
+                    data.defaults[f.key] === true
+                      ? 'sim'
+                      : data.defaults[f.key] === false
+                        ? 'não'
+                        : data.defaults[f.key],
+                  )}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {msg && <Notice tone={msg.ok ? 'positive' : 'danger'}>{msg.text}</Notice>}
       {!readOnly && (
-        <button type="submit" className="primary" disabled={!dirty || busy}>
-          Salvar regras
-        </button>
+        <div className="ui-savebar">
+          <Button type="submit" variant="primary" disabled={!dirty || busy}>
+            Salvar regras
+          </Button>
+        </div>
       )}
     </form>
   );

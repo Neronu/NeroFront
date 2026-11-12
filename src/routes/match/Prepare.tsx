@@ -1,7 +1,8 @@
-import type { Match, MatchCandidates, MatchRoster, TeamSide } from '@neronu/api-contract';
+import type { Match, MatchCandidates, MatchRoster, TeamSide } from '../../lib/api/contract';
 import { STARTERS } from '@neronu/sport-basketball';
 import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
+import { Button, Card, ErrorState, Notice, PageHeader, Skeleton } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import { useAsync } from '../../lib/useAsync';
 
@@ -43,9 +44,9 @@ function initialPicks(data: Loaded, side: TeamSide): Picks {
 /** Relacionados e titulares de cada equipe; o módulo confere tudo antes de salvar. */
 export function Prepare() {
   const { id = '' } = useParams();
-  const [data] = useAsync(() => load(id), id);
-  if (data.status === 'loading') return <p className="muted">Carregando…</p>;
-  if (data.status === 'error') return <p className="status-error">{data.message}</p>;
+  const [data, reload] = useAsync(() => load(id), id);
+  if (data.status === 'loading') return <Skeleton lines={8} />;
+  if (data.status === 'error') return <ErrorState message={data.message} onRetry={reload} />;
   if (data.data.match.status !== 'scheduled') {
     return <Navigate to={`/partidas/${id}/mesa`} replace />;
   }
@@ -89,71 +90,86 @@ function PrepareForm({ id, data }: { id: string; data: Loaded }) {
   };
 
   return (
-    <div className="stack">
-      {(['home', 'away'] as const).map((side) => {
-        const list = picks[side];
-        const starters = Object.values(list).filter((p) => p.selected && p.isStarter).length;
-        const selected = Object.values(list).filter((p) => p.selected).length;
-        return (
-          <section className="card stack" key={side}>
-            <div className="row between">
-              <h2>
-                {side === 'home' ? 'A' : 'B'} · {teamName(side)}
-              </h2>
-              <span className={starters === STARTERS ? 'status-ok small' : 'status-warn small'}>
-                {selected} relacionados · {starters}/{STARTERS} titulares
-              </span>
-            </div>
-            {candidates[side].length === 0 && (
-              <p className="status-warn">
-                Nenhum atleta disponível: cadastre a equipe ou o elenco inscrito.
-              </p>
-            )}
-            <ul className="list">
-              {candidates[side].map((p) => {
-                const pick = list[p.athleteId];
-                if (!pick) return null;
-                return (
-                  <li key={p.athleteId} className="row">
-                    <input
-                      type="checkbox"
-                      aria-label={`Relacionar ${p.name}`}
-                      checked={pick.selected}
-                      onChange={(e) =>
-                        update(side, p.athleteId, {
-                          selected: e.target.checked,
-                          ...(e.target.checked ? {} : { isStarter: false }),
-                        })
-                      }
-                    />
-                    <input
-                      className="num-input"
-                      inputMode="numeric"
-                      aria-label={`Número de ${p.name}`}
-                      value={pick.number}
-                      readOnly={fixedNumbers}
-                      onChange={(e) => update(side, p.athleteId, { number: e.target.value })}
-                    />
-                    <span className="grow">{p.name}</span>
-                    <button
-                      type="button"
-                      className={pick.isStarter ? 'chip on' : 'chip'}
-                      disabled={!pick.selected}
-                      onClick={() => update(side, p.athleteId, { isStarter: !pick.isStarter })}
-                    >
-                      Titular
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        );
-      })}
-      {error && <p className="status-error">{error}</p>}
-      <button className="primary big" onClick={save} disabled={saving}>
-        Ir para a mesa
-      </button>
+    <div className="ui-stack ui-stack--section">
+      <PageHeader
+        eyebrow="Preparação"
+        title={`${teamName('home')} × ${teamName('away')}`}
+        meta={`Marque os relacionados e os ${STARTERS} titulares de cada equipe.`}
+      />
+      <div className="lyt-grid">
+        {(['home', 'away'] as const).map((side) => {
+          const list = picks[side];
+          const starters = Object.values(list).filter((p) => p.selected && p.isStarter).length;
+          const selected = Object.values(list).filter((p) => p.selected).length;
+          const ready = starters === STARTERS;
+          return (
+            <section className="ui-stack prepare-team" key={side} aria-labelledby={`prep-${side}`}>
+              <div className="ui-section-head">
+                <h2 id={`prep-${side}`}>
+                  {side === 'home' ? 'A' : 'B'} · {teamName(side)}
+                </h2>
+                <Notice tone={ready ? 'positive' : 'muted'}>
+                  {selected} relacionados · {starters}/{STARTERS} titulares
+                </Notice>
+              </div>
+              {candidates[side].length === 0 ? (
+                <Card>
+                  <Notice>Nenhum atleta disponível. Cadastre a equipe ou o elenco inscrito.</Notice>
+                </Card>
+              ) : (
+                <ul className="ui-list">
+                  {candidates[side].map((p) => {
+                    const pick = list[p.athleteId];
+                    if (!pick) return null;
+                    return (
+                      <li key={p.athleteId}>
+                        <input
+                          type="checkbox"
+                          className="ui-check"
+                          aria-label={`Relacionar ${p.name}`}
+                          checked={pick.selected}
+                          onChange={(e) =>
+                            update(side, p.athleteId, {
+                              selected: e.target.checked,
+                              ...(e.target.checked ? {} : { isStarter: false }),
+                            })
+                          }
+                        />
+                        <input
+                          className="ui-control ui-control--num"
+                          inputMode="numeric"
+                          aria-label={`Número de ${p.name}`}
+                          value={pick.number}
+                          readOnly={fixedNumbers}
+                          onChange={(e) => update(side, p.athleteId, { number: e.target.value })}
+                        />
+                        <span className="ui-list__main">
+                          <span className="ui-list__title">{p.name}</span>
+                        </span>
+                        <button
+                          type="button"
+                          className="ui-toggle"
+                          aria-pressed={pick.isStarter}
+                          disabled={!pick.selected}
+                          onClick={() => update(side, p.athleteId, { isStarter: !pick.isStarter })}
+                        >
+                          Titular
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          );
+        })}
+      </div>
+      {error && <Notice tone="danger">{error}</Notice>}
+      <div className="ui-savebar">
+        <Button variant="primary" fluid onClick={save} disabled={saving}>
+          Ir para a mesa
+        </Button>
+      </div>
     </div>
   );
 }

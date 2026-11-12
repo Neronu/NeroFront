@@ -1,0 +1,711 @@
+/*
+ * Primitivos de src/components/ui (seção 7, Controles).
+ * Prefixo ui- para não colidir com as classes legadas de index.css.
+ * Estado se mostra só trocando a cor do preenchimento: nada sobe, afunda ou cresce.
+ */
+
+/* ─── Botão ────────────────────────────────────────────────────────────── */
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: 600;
+  line-height: 20px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition-color);
+}
+.ui-button--primary {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+.ui-button--primary:hover:not(:disabled, [aria-disabled='true']),
+.ui-button--primary:active:not(:disabled, [aria-disabled='true']) {
+  background: var(--brand-strong);
+}
+.ui-button--secondary {
+  background: var(--brand-soft);
+  color: var(--ink);
+}
+.ui-button--secondary:hover:not(:disabled, [aria-disabled='true']),
+.ui-button--secondary:active:not(:disabled, [aria-disabled='true']) {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+.ui-button--quiet {
+  background: transparent;
+  color: var(--brand);
+  padding-inline: var(--space-2);
+}
+.ui-button--quiet:hover:not(:disabled, [aria-disabled='true']) {
+  background: var(--brand-soft);
+}
+.ui-button--danger-text {
+  background: transparent;
+  color: var(--danger);
+  padding-inline: var(--space-2);
+}
+.ui-button:disabled,
+.ui-button[aria-disabled='true'] {
+  background: var(--surface-sunken);
+  color: var(--muted);
+  cursor: default;
+}
+.ui-button--block {
+  width: 100%;
+}
+/* No celular, o botão principal ocupa a largura toda. */
+@media (max-width: 479.98px) {
+  .ui-button--fluid {
+    width: 100%;
+  }
+}
+
+/* ─── Campo ────────────────────────────────────────────────────────────── */
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.ui-field__label {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ui-field__help {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+}
+.ui-field__error {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--danger);
+}
+/* Único controle com borda do sistema. */
+.ui-control {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  transition: var(--transition-color);
+}
+.ui-control:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  /* Borda de 2px sem mudar o tamanho: compensa no padding. */
+  border-width: 2px;
+  padding: calc(var(--space-2) - 1px) calc(var(--space-3) - 1px);
+}
+.ui-control[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+.ui-control:disabled {
+  background: var(--surface-sunken);
+  color: var(--muted);
+}
+
+/* ─── Selo ─────────────────────────────────────────────────────────────── */
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.ui-badge--neutral {
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+.ui-badge--closed {
+  background: var(--surface-sunken);
+  color: var(--muted);
+}
+.ui-badge--live {
+  background: var(--live);
+  color: var(--on-live);
+}
+
+/* ─── Abas ─────────────────────────────────────────────────────────────── */
+.ui-tabs {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--line);
+}
+.ui-tabs::-webkit-scrollbar {
+  display: none;
+}
+.ui-tab {
+  flex: none;
+  min-height: var(--touch-min);
+  padding: var(--space-2) 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-color);
+}
+.ui-tab:hover {
+  color: var(--ink);
+}
+.ui-tab[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+/* ─── Cartão / superfície ──────────────────────────────────────────────── */
+.ui-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.ui-card--flush {
+  padding: 0;
+  overflow: hidden;
+}
+.ui-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.ui-stack--section {
+  gap: var(--space-8);
+}
+
+/* ─── Cabeçalho de página ─────────────────────────────────────────────── */
+.ui-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.ui-page-header__titles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.ui-page-header__eyebrow {
+  color: var(--muted);
+}
+.ui-page-header__meta {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+@media (max-width: 479.98px) {
+  .ui-page-header > .ui-button--primary {
+    width: 100%;
+  }
+}
+
+/* ─── Tabela de dados ──────────────────────────────────────────────────── */
+.ui-table-wrap {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 20px;
+}
+.ui-table th {
+  background: var(--surface-sunken);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  white-space: nowrap;
+}
+.ui-table td {
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  vertical-align: middle;
+}
+.ui-table .is-num {
+  text-align: right;
+  font-family: var(--font-stat);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.ui-table th.is-num {
+  font-family: var(--font-sans);
+}
+.ui-table a {
+  color: inherit;
+  text-decoration: none;
+}
+.ui-table tr.is-clickable {
+  cursor: pointer;
+}
+.ui-table tr.is-clickable:hover td {
+  background: var(--brand-soft);
+}
+.ui-table tr.is-divider-after td {
+  border-bottom: 2px solid var(--border);
+}
+
+/* Abaixo de bp-md: cada linha vira cartão empilhado. */
+@media (max-width: 767.98px) {
+  .ui-table--cards thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+  .ui-table--cards,
+  .ui-table--cards tbody,
+  .ui-table--cards tr,
+  .ui-table--cards td {
+    display: block;
+  }
+  .ui-table--cards tr {
+    padding: var(--space-3) var(--space-4);
+    border-top: 1px solid var(--line);
+  }
+  .ui-table--cards tr:first-child {
+    border-top: none;
+  }
+  .ui-table--cards td {
+    border: none;
+    padding: 0;
+    color: var(--muted);
+  }
+  .ui-table--cards td.is-lead {
+    color: var(--ink);
+    font-size: 18px;
+    line-height: 24px;
+    font-weight: 600;
+    margin-bottom: var(--space-1);
+  }
+  .ui-table--cards td:not(.is-lead)::before {
+    content: attr(data-label) ': ';
+    font-family: var(--font-sans);
+  }
+  .ui-table--cards td:not(.is-lead):empty {
+    display: none;
+  }
+  .ui-table--cards .is-num {
+    text-align: left;
+  }
+}
+
+/* Colunas de destaque fixas, números rolam (Classificação). */
+.ui-table-wrap--scroll {
+  overflow-x: auto;
+}
+.ui-table--sticky .is-lead {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.ui-table--sticky th.is-lead {
+  background: var(--surface-sunken);
+}
+
+/* ─── Estados de tela ──────────────────────────────────────────────────── */
+.ui-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  background: var(--surface);
+  border-radius: var(--radius-md);
+}
+.ui-state p {
+  margin: 0;
+}
+.ui-state--error .ui-state__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--danger);
+  font-weight: 600;
+}
+.ui-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ui-skeleton__block {
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+/* ─── Camada de modal / gaveta ─────────────────────────────────────────── */
+.ui-scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  z-index: 50;
+  display: flex;
+}
+.ui-scrim--modal {
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+.ui-scrim--drawer {
+  justify-content: flex-start;
+}
+.ui-dialog {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  overflow: hidden;
+}
+.ui-scrim--modal .ui-dialog {
+  width: min(100%, var(--reading-max));
+  border-radius: var(--radius-lg);
+}
+.ui-scrim--drawer .ui-dialog {
+  width: min(85vw, var(--sidebar-w));
+  height: 100%;
+  border-width: 0 1px 0 0;
+}
+.ui-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+.ui-dialog__body {
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+
+/* ─── Seletor de tema ──────────────────────────────────────────────────── */
+.ui-theme-toggle {
+  color: var(--ink);
+}
+.ui-theme-toggle.is-compact {
+  min-width: var(--touch-min);
+  padding-inline: 0;
+}
+.ui-theme-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ─── Marca ────────────────────────────────────────────────────────────── */
+.ui-wordmark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 28px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.on-court .ui-wordmark {
+  color: var(--on-court);
+}
+
+/* O label legado (index.css) vira coluna flexível; aqui o seletor de tema volta ao normal. */
+.ui-segmented label {
+  display: inline-flex;
+  flex: none;
+}
+
+/* ─── Lista em superfície ──────────────────────────────────────────────── */
+.ui-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+}
+.ui-list > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-4);
+}
+.ui-list > li + li {
+  border-top: 1px solid var(--line);
+}
+.ui-list__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ui-list__title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ui-list__meta {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+.ui-list a.ui-list__title {
+  color: var(--ink);
+  text-decoration: none;
+}
+.ui-list a.ui-list__title:hover {
+  color: var(--brand);
+}
+
+/* ─── Aviso em linha (sempre com palavra e ícone) ──────────────────────── */
+.ui-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink);
+}
+.ui-notice svg {
+  flex: none;
+}
+.ui-notice--danger {
+  color: var(--danger);
+}
+.ui-notice--positive {
+  color: var(--positive);
+}
+.ui-notice--muted {
+  color: var(--muted);
+}
+
+/* ─── Formulário em uma coluna ─────────────────────────────────────────── */
+.ui-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--reading-max);
+}
+.ui-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+.ui-form-row > .ui-field {
+  flex: 1 1 200px;
+}
+.ui-form-row > .ui-field--num {
+  flex: 0 0 88px;
+}
+
+/* Barra de salvar: fixa no rodapé no celular, em linha no desktop. */
+.ui-savebar {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+@media (max-width: 767.98px) {
+  .ui-savebar {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    min-height: var(--bottomnav-h);
+    margin: 0 calc(-1 * var(--space-4));
+    padding: var(--space-2) var(--space-4) calc(var(--space-2) + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+  .ui-savebar > .ui-button {
+    flex: 1;
+  }
+}
+
+/* ─── Controles compactos ──────────────────────────────────────────────── */
+.ui-control--num {
+  width: 72px;
+  flex: none;
+  text-align: right;
+  font-family: var(--font-stat);
+  font-variant-numeric: tabular-nums;
+}
+.ui-check {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  margin: 0;
+  flex: none;
+  accent-color: var(--brand);
+}
+/* Alternador (aria-pressed): seleção em brand, sem contorno. */
+.ui-toggle {
+  min-height: 36px;
+  padding: var(--space-1) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-color);
+}
+.ui-toggle[aria-pressed='true'] {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+.ui-toggle:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.ui-jersey {
+  display: inline-block;
+  min-width: 3ch;
+  text-align: right;
+  font-family: var(--font-stat);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cabeçalho de seção: h2 à esquerda, ação secundária à direita. */
+.ui-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.ui-form p,
+.ui-stack > p,
+.ui-card > p {
+  margin: 0;
+}
+
+.ui-list__full {
+  flex-basis: 100%;
+}
+
+/* ─── Linha de regra (formulário gerado pelo módulo de esporte) ───────── */
+.ui-rule {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+.ui-rule + .ui-rule {
+  border-top: 1px solid var(--line);
+}
+.ui-rule__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-weight: 600;
+  font-size: 16px;
+}
+.ui-rule__help {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+}
+/* Regra diferente do padrão: só o peso e o texto de apoio marcam, sem cor. */
+.ui-rule.is-changed .ui-rule__label::after {
+  content: 'Alterada';
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  padding: 2px var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--brand-soft);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ui-rule__select {
+  width: auto;
+  min-width: 120px;
+}
+.ui-rule__default {
+  grid-column: 1 / -1;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+}
+
+/* Preparação: as duas equipes lado a lado a partir de bp-lg. */
+@media (min-width: 1024px) {
+  .lyt-grid > .prepare-team {
+    grid-column: span 6;
+  }
+}
+
+/* Placar da conferência: bloco cheio em court, números em gold (24px ou mais). */
+.review-score {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--court);
+  color: var(--on-court);
+  text-align: center;
+}
+.review-score__team {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.review-score__value {
+  color: var(--gold);
+  white-space: nowrap;
+}
+@media (max-width: 479.98px) {
+  .review-score .t-score {
+    font-size: 48px;
+    line-height: 48px;
+  }
+}

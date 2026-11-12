@@ -1,74 +1,96 @@
-import type { MemberRole } from '@neronu/api-contract';
+import type { MemberRole } from '../../lib/api/contract';
 import { useState, type FormEvent } from 'react';
+import {
+  Badge,
+  Button,
+  Card,
+  ErrorState,
+  Notice,
+  SelectField,
+  Skeleton,
+  TextField,
+} from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import { useOrg } from '../../lib/session';
 import { useAsync } from '../../lib/useAsync';
 
 const ROLE: Record<MemberRole, string> = { admin: 'Administrador(a)', scorer: 'Mesário(a)' };
 
+/** Seção de membros, dentro de Configurações. */
 export function Members() {
   const { org, isAdmin } = useOrg();
   const [members, reload] = useAsync(() => api.members(org.id), org.id);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<MemberRole>('scorer');
-  const [msg, setMsg] = useState('');
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const add = async (e: FormEvent) => {
     e.preventDefault();
     try {
       const m = await api.addMember(org.id, { email, role });
-      setMsg(m.pending ? `Convite enviado para ${m.email}.` : `${m.name} entrou na entidade.`);
+      setMsg({
+        ok: true,
+        text: m.pending ? `Convite enviado para ${m.email}.` : `${m.name} entrou na entidade.`,
+      });
       setEmail('');
       reload();
     } catch (err) {
-      setMsg(errorMessage(err));
+      setMsg({ ok: false, text: errorMessage(err) });
     }
   };
 
   return (
-    <section className="card stack">
-      <h1>Membros</h1>
+    <section className="ui-stack" aria-labelledby="settings-members">
+      <h2 id="settings-members">Membros</h2>
+      {members.status === 'loading' && <Skeleton lines={2} />}
+      {members.status === 'error' && <ErrorState message={members.message} onRetry={reload} />}
       {members.status === 'ok' && (
-        <ul className="list">
+        <ul className="ui-list">
           {members.data.map((m) => (
-            <li key={m.email} className="row between">
-              <span>
-                {m.name ?? m.email}
-                {m.name && <span className="muted small"> · {m.email}</span>}
+            <li key={m.email}>
+              <span className="ui-list__main">
+                <span className="ui-list__title">{m.name ?? m.email}</span>
+                {m.name && <span className="ui-list__meta">{m.email}</span>}
               </span>
-              <span className="muted small">
-                {ROLE[m.role]}
-                {m.pending && ' · convite pendente'}
-              </span>
+              <span className="t-small t-muted">{ROLE[m.role]}</span>
+              {m.pending && <Badge>Convite pendente</Badge>}
             </li>
           ))}
         </ul>
       )}
       {isAdmin && (
-        <form onSubmit={add} className="stack">
-          <h2>Convidar</h2>
-          <div className="row wrap">
-            <input
-              type="email"
-              placeholder="E-mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <select value={role} onChange={(e) => setRole(e.target.value as MemberRole)}>
-              <option value="scorer">Mesário(a)</option>
-              <option value="admin">Administrador(a)</option>
-            </select>
-            <button type="submit" className="primary">
-              Convidar
-            </button>
-          </div>
-          <p className="muted small">
-            Mesários anotam e fecham súmulas; administradores também cuidam de cadastros, regras e
-            campeonatos.
-          </p>
-          {msg && <p>{msg}</p>}
-        </form>
+        <Card>
+          <form onSubmit={add} className="ui-form">
+            <h3>Convidar membro</h3>
+            <div className="ui-form-row">
+              <TextField
+                label="E-mail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <SelectField
+                label="Papel"
+                value={role}
+                onChange={(e) => setRole(e.target.value as MemberRole)}
+              >
+                <option value="scorer">Mesário(a)</option>
+                <option value="admin">Administrador(a)</option>
+              </SelectField>
+            </div>
+            <p className="t-small t-muted">
+              Mesários anotam e fecham súmulas; administradores também cuidam de cadastros, regras e
+              campeonatos.
+            </p>
+            {msg && <Notice tone={msg.ok ? 'positive' : 'danger'}>{msg.text}</Notice>}
+            <div>
+              <Button type="submit" variant="secondary">
+                Convidar
+              </Button>
+            </div>
+          </form>
+        </Card>
       )}
     </section>
   );

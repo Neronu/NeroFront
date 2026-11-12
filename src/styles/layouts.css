@@ -1,0 +1,211 @@
+/*
+ * Os quatro modelos de layout (seção 8). CSS do celular primeiro; colunas nos pontos de quebra.
+ * bp-sm 480 · bp-md 768 · bp-lg 1024 · bp-xl 1280
+ */
+
+/* ─── Barra superior ───────────────────────────────────────────────────── */
+.lyt-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--topbar-h);
+  padding: 0 var(--space-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.lyt-topbar__end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.lyt-topbar__context {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (min-width: 768px) {
+  .lyt-topbar {
+    padding: 0 var(--space-6);
+  }
+}
+
+/* ─── Área de conteúdo ─────────────────────────────────────────────────── */
+.lyt-content {
+  width: 100%;
+  max-width: calc(var(--content-max) + 2 * var(--space-4));
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-12);
+}
+@media (min-width: 768px) {
+  .lyt-content {
+    max-width: calc(var(--content-max) + 2 * var(--space-6));
+    padding: var(--space-6) var(--space-6) var(--space-16);
+  }
+}
+.lyt-reading {
+  max-width: var(--reading-max);
+}
+
+/* Grade: 4 colunas até bp-md, 8 até bp-lg, 12 a partir de bp-lg. */
+.lyt-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.lyt-grid > * {
+  grid-column: 1 / -1;
+}
+@media (min-width: 768px) {
+  .lyt-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: var(--space-6);
+  }
+}
+@media (min-width: 1024px) {
+  .lyt-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .lyt-grid > .lyt-span-8 {
+    grid-column: span 8;
+  }
+  .lyt-grid > .lyt-span-4 {
+    grid-column: span 4;
+  }
+}
+
+/* ─── LayoutHome ───────────────────────────────────────────────────────── */
+.lyt-home {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.lyt-home .lyt-content {
+  max-width: calc(var(--reading-max) + 2 * var(--space-4));
+}
+@media (min-width: 768px) {
+  .lyt-home .lyt-content {
+    max-width: calc(var(--reading-max) + 2 * var(--space-6));
+    padding-top: var(--space-12);
+  }
+}
+
+/* ─── LayoutCampeonato: sem barra lateral, conteúdo até content-max ──────── */
+.lyt-campeonato {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── LayoutPainel ─────────────────────────────────────────────────────── */
+.lyt-painel {
+  min-height: 100dvh;
+}
+.lyt-painel__sidebar {
+  display: none;
+}
+.lyt-painel__menu-button {
+  margin-left: calc(-1 * var(--space-2));
+}
+@media (min-width: 1024px) {
+  .lyt-painel {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  }
+  .lyt-painel__sidebar {
+    display: flex;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+  }
+  .lyt-painel__menu-button,
+  .lyt-painel__topbar-wordmark {
+    display: none;
+  }
+}
+
+/* Conteúdo da barra lateral (fixa ou na gaveta). */
+.lyt-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  width: 100%;
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+.lyt-nav__brand {
+  display: flex;
+  align-items: center;
+  height: calc(var(--topbar-h) - var(--space-4));
+}
+.lyt-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.lyt-nav__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.lyt-nav__group-label {
+  padding: 0 var(--space-3);
+  color: var(--muted);
+}
+.lyt-nav__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  transition: var(--transition-color);
+}
+.lyt-nav__link:hover {
+  background: var(--brand-soft);
+}
+.lyt-nav__link[aria-current='page'] {
+  background: var(--surface-sunken);
+}
+.lyt-nav__footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+.lyt-nav__user {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Na gaveta, o Overlay já dá o padding. */
+.ui-dialog .lyt-nav {
+  padding: 0;
+}
+
+/* ─── LayoutSumula ─────────────────────────────────────────────────────── */
+.lyt-sumula {
+  min-height: 100dvh;
+}
+.lyt-nav__footer .ui-button {
+  justify-content: flex-start;
+}

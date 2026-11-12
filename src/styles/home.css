@@ -1,0 +1,107 @@
+/* ─── Página inicial (seção 9) ─────────────────────────────────────────── */
+
+/* Campo de código com "OK" ao lado, alinhados pelo topo: o erro abaixo do campo não move o botão.
+   Código em fonte de estatística. */
+.code-search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+}
+.code-search__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.code-search__field {
+  flex: 1;
+}
+/* Rótulo só para leitores de tela: não ocupa espaço acima do campo. */
+.code-search__field .ui-field__label {
+  display: contents;
+}
+.code-search__row > .ui-button {
+  flex: none;
+  min-width: var(--touch-min);
+}
+.code-search .ui-control {
+  font-family: var(--font-stat);
+  letter-spacing: 0.02em;
+}
+/* O texto de ajuda fica na fonte normal, para caber inteiro no celular. */
+.code-search .ui-control::placeholder {
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+}
+
+/* Visitante: título, campo e dica centralizados no meio da tela. */
+.lyt-home .lyt-content:has(> .visitor-home) {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: calc(26rem + 2 * var(--space-4));
+}
+.visitor-home {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+.visitor-home__title {
+  font-size: 32px;
+  line-height: 36px;
+}
+.visitor-home .code-search {
+  text-align: left;
+}
+
+/* Logado: "Meus campeonatos" em cartões. */
+.my-champs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+@media (min-width: 768px) {
+  .my-champs {
+    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  }
+}
+.my-champ {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  height: 100%;
+}
+.my-champ__name a {
+  color: var(--ink);
+  text-decoration: none;
+}
+/* O cartão inteiro é clicável, mas o link continua sendo o nome. */
+.my-champ__name a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.my-champ__name a:focus-visible::after {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.my-champ__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+/* No painel, o campo de código não se estica além da largura de leitura. */
+.lyt-painel .code-search {
+  max-width: var(--reading-max);
+}

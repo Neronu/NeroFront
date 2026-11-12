@@ -1,0 +1,227 @@
+/* Página do campeonato (seções 11 a 13). Consulta limpa: surface, line, ink e muted. */
+
+/* ─── Resultados ───────────────────────────────────────────────────────── */
+.ch-day::first-letter {
+  text-transform: uppercase;
+}
+/* Os jogos de um dia ficam numa única surface, separados por line. */
+.ch-games {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+}
+.ch-game {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+.ch-game + .ch-game {
+  border-top: 1px solid var(--line);
+}
+.ch-game__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+.ch-game__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-6);
+}
+.ch-game__table {
+  flex: 1 1 260px;
+  max-width: 420px;
+  border-collapse: collapse;
+}
+.ch-game__table th,
+.ch-game__table td {
+  padding: 2px 0;
+}
+.ch-game__team {
+  text-align: left;
+  font-weight: 400;
+  color: var(--ink);
+}
+.ch-game__total,
+.ch-game__time {
+  text-align: right;
+  font-family: var(--font-stat);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  width: 6ch;
+}
+.ch-game__time {
+  vertical-align: middle;
+  color: var(--ink);
+}
+/* O vencedor se lê pelo peso; o perdedor em muted. Sem selo, sem cor, sem ícone. */
+.ch-game__table tr.is-winner th,
+.ch-game__table tr.is-winner td {
+  font-weight: 600;
+  color: var(--ink);
+}
+.ch-game__table tr.is-loser th,
+.ch-game__table tr.is-loser td {
+  color: var(--muted);
+}
+.ch-game__side {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: 14px;
+  line-height: 20px;
+}
+.ch-game__when {
+  color: var(--muted);
+  font-family: var(--font-stat);
+}
+.ch-game__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* ─── Classificação ────────────────────────────────────────────────────── */
+/* Posição e equipe fixas; os números rolam na horizontal no celular. */
+.ch-standings .ch-col-pos {
+  left: 0;
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+}
+.ch-standings .ch-col-team {
+  left: 48px;
+  min-width: 150px;
+  white-space: nowrap;
+}
+.ch-standings td {
+  white-space: nowrap;
+}
+
+/* Chave do mata-mata: o vencedor pelo peso, sem fundo colorido. */
+.ch-bracket {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+.ch-bracket__round {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 200px;
+}
+/* Os confrontos de cada rodada se distribuem na altura, alinhados à rodada anterior. */
+.ch-bracket__slots {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: var(--space-3);
+}
+.ch-bracket__round h4 {
+  margin: 0;
+}
+.ch-bracket__slot {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+}
+.ch-bracket__team {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink);
+}
+.ch-bracket__team + .ch-bracket__team {
+  border-top: 1px solid var(--line);
+}
+.ch-bracket__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-bracket__score {
+  font-family: var(--font-stat);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.ch-bracket__team.is-winner {
+  font-weight: 600;
+}
+.ch-bracket__team.is-loser,
+.ch-bracket__team.is-tbd {
+  color: var(--muted);
+}
+
+/* ─── Estatísticas ─────────────────────────────────────────────────────── */
+/* No celular os destaques vêm logo abaixo das abas; a partir de bp-lg, à direita. */
+@media (min-width: 1024px) {
+  .ch-stats > .ch-stats__aside {
+    grid-column: 9 / -1;
+    grid-row: 1;
+    align-self: start;
+  }
+  .ch-stats > .ch-stats__main.lyt-span-8 {
+    grid-column: 1 / span 8;
+    grid-row: 1;
+  }
+}
+/* Mérito (cestinha, campeão): o único lugar com gold fora do placar. */
+.ch-merit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--gold);
+  color: var(--on-gold);
+}
+.ch-merit__name {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 700;
+}
+.ch-merit__meta {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* ─── Equipes ──────────────────────────────────────────────────────────── */
+.ch-reg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+.ch-invite-url {
+  font-family: var(--font-stat);
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-checkline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Texto longo ao lado da caixa (declarações): a caixa alinha com a primeira linha. */
+.ui-checkline--top {
+  align-items: flex-start;
+}

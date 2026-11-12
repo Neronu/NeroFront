@@ -1,10 +1,24 @@
-import type { OrganizationAthlete } from '@neronu/api-contract';
+import type { OrganizationAthlete } from '../../lib/api/contract';
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
+import {
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Notice,
+  PageHeader,
+  Skeleton,
+  TextField,
+} from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import { useOrg } from '../../lib/session';
 import { useAsync } from '../../lib/useAsync';
 
-/** Atletas da entidade. E-mail e RGA são opcionais e nunca aparecem em páginas públicas. */
+/**
+ * Atletas da entidade. E-mail e RGA são opcionais e nunca aparecem em páginas públicas.
+ * O admin pode ocultar o perfil público de um atleta, a pedido dele (E9).
+ */
 export function Athletes() {
   const { org, isAdmin } = useOrg();
   const [list, reload] = useAsync(() => api.orgAthletes(org.id), org.id);
@@ -29,47 +43,62 @@ export function Athletes() {
   };
 
   return (
-    <section className="card stack">
-      <h1>Atletas</h1>
+    <div className="ui-stack ui-stack--section">
+      <PageHeader title="Atletas" />
+      {!org.publicationConsent && (
+        <Notice>
+          As páginas públicas dos atletas estão desligadas até a entidade declarar que tem
+          autorização para publicar os dados. Isso é feito em{' '}
+          <Link to="/configuracoes">Configurações</Link>.
+        </Notice>
+      )}
       {isAdmin && (
-        <form onSubmit={add} className="stack">
-          <div className="row wrap">
-            <input
-              placeholder="Nome"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-            />
-            <input
-              type="email"
-              placeholder="E-mail (opcional)"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
-            <input
-              placeholder="RGA (opcional)"
-              value={form.rga}
-              onChange={(e) => setForm({ ...form, rga: e.target.value })}
-            />
-            <button type="submit" className="primary">
-              Adicionar
-            </button>
-          </div>
-          {error && <p className="status-error">{error}</p>}
-        </form>
+        <Card>
+          <form onSubmit={add} className="ui-form">
+            <div className="ui-form-row">
+              <TextField
+                label="Nome"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+              />
+              <TextField
+                label="E-mail (opcional)"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+              <TextField
+                label="RGA (opcional)"
+                value={form.rga}
+                onChange={(e) => setForm({ ...form, rga: e.target.value })}
+              />
+            </div>
+            <p className="t-small t-muted">E-mail e RGA nunca aparecem nas páginas públicas.</p>
+            {error && <Notice tone="danger">{error}</Notice>}
+            <div>
+              <Button type="submit" variant="primary" fluid>
+                Adicionar atleta
+              </Button>
+            </div>
+          </form>
+        </Card>
       )}
-      {list.status === 'error' && <p className="status-error">{list.message}</p>}
-      {list.status === 'ok' && (
-        <ul className="list">
-          {list.data.map((a) => (
-            <AthleteRow key={a.id} athlete={a} editable={isAdmin} onSaved={reload} />
-          ))}
-        </ul>
-      )}
-      {list.status === 'ok' && list.data.length === 0 && (
-        <p className="muted">Nenhum atleta ainda.</p>
-      )}
-    </section>
+      {list.status === 'loading' && <Skeleton />}
+      {list.status === 'error' && <ErrorState message={list.message} onRetry={reload} />}
+      {list.status === 'ok' &&
+        (list.data.length === 0 ? (
+          <EmptyState>
+            {isAdmin ? 'Nenhum atleta ainda. Cadastre o primeiro acima.' : 'Nenhum atleta ainda.'}
+          </EmptyState>
+        ) : (
+          <ul className="ui-list" aria-label="Atletas">
+            {list.data.map((a) => (
+              <AthleteRow key={a.id} athlete={a} editable={isAdmin} onSaved={reload} />
+            ))}
+          </ul>
+        ))}
+    </div>
   );
 }
 
@@ -86,6 +115,20 @@ function AthleteRow({
   const [email, setEmail] = useState(athlete.email ?? '');
   const [rga, setRga] = useState(athlete.rga ?? '');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const togglePublic = async (publicProfile: boolean) => {
+    setBusy(true);
+    setError('');
+    try {
+      await api.updateAthlete(athlete.id, { publicProfile });
+      onSaved();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
@@ -98,46 +141,64 @@ function AthleteRow({
     }
   };
 
+  const contact = [athlete.email, athlete.rga && `RGA ${athlete.rga}`].filter(Boolean).join(' · ');
+  const status = [athlete.linked && 'Conta ligada', !athlete.publicProfile && 'Perfil oculto']
+    .filter(Boolean)
+    .join(' · ');
+  const teams = athlete.teams
+    .map((t) => `${t.name}${t.number !== null ? ` #${t.number}` : ''}`)
+    .join(', ');
+
   return (
-    <li className="stack tight">
-      <div className="row between">
-        <span>
-          <strong>{athlete.name}</strong>
-          <span className="muted small">
-            {' '}
-            {[athlete.email, athlete.rga && `RGA ${athlete.rga}`].filter(Boolean).join(' · ')}
-          </span>
-        </span>
-        {editable && !editing && (
-          <button className="link" onClick={() => setEditing(true)}>
-            Editar
-          </button>
-        )}
-      </div>
-      {athlete.teams.length > 0 && (
-        <span className="muted small">
-          {athlete.teams
-            .map((t) => `${t.name}${t.number !== null ? ` #${t.number}` : ''}`)
-            .join(', ')}
-        </span>
+    <li>
+      <span className="ui-list__main">
+        <span className="ui-list__title">{athlete.name}</span>
+        {contact && <span className="ui-list__meta">{contact}</span>}
+        {teams && <span className="ui-list__meta">{teams}</span>}
+        {status && <span className="ui-list__meta">{status}</span>}
+      </span>
+      {editable && (
+        <label className="ui-checkline t-small">
+          <input
+            type="checkbox"
+            className="ui-check"
+            checked={athlete.publicProfile}
+            disabled={busy}
+            onChange={(e) => void togglePublic(e.target.checked)}
+          />
+          Perfil público
+        </label>
+      )}
+      {editable && !editing && (
+        <Button variant="quiet" onClick={() => setEditing(true)}>
+          Editar
+        </Button>
       )}
       {editing && (
-        <form onSubmit={save} className="row wrap">
-          <input
-            type="email"
-            placeholder="E-mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input placeholder="RGA" value={rga} onChange={(e) => setRga(e.target.value)} />
-          <button type="submit" className="primary">
-            Salvar
-          </button>
-          <button type="button" onClick={() => setEditing(false)}>
-            Cancelar
-          </button>
-          {error && <p className="status-error">{error}</p>}
+        <form onSubmit={save} className="ui-form ui-list__full">
+          <div className="ui-form-row">
+            <TextField
+              label="E-mail"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <TextField label="RGA" value={rga} onChange={(e) => setRga(e.target.value)} />
+          </div>
+          <div className="ui-form-row">
+            <Button type="submit" variant="primary">
+              Salvar atleta
+            </Button>
+            <Button variant="secondary" onClick={() => setEditing(false)}>
+              Cancelar
+            </Button>
+          </div>
         </form>
+      )}
+      {error && (
+        <div className="ui-list__full">
+          <Notice tone="danger">{error}</Notice>
+        </div>
       )}
     </li>
   );

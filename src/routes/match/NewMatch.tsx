@@ -1,12 +1,23 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
+import {
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Notice,
+  PageHeader,
+  SelectField,
+  Skeleton,
+  TextField,
+} from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import { useOrg } from '../../lib/session';
 import { useAsync } from '../../lib/useAsync';
 
 export function NewMatch() {
   const { org } = useOrg();
-  const [teams] = useAsync(() => api.teams(org.id), org.id);
+  const [teams, reload] = useAsync(() => api.teams(org.id), org.id);
   const [home, setHome] = useState('');
   const [away, setAway] = useState('');
   const [venue, setVenue] = useState('');
@@ -29,15 +40,23 @@ export function NewMatch() {
     }
   };
 
-  if (teams.status === 'loading') return <p className="muted">Carregando…</p>;
-  if (teams.status === 'error') return <p className="status-error">{teams.message}</p>;
+  const header = <PageHeader title="Nova partida" />;
+  if (teams.status === 'loading') return <Skeleton lines={4} />;
+  if (teams.status === 'error') return <ErrorState message={teams.message} onRetry={reload} />;
   if (teams.data.length < 2) {
     return (
-      <section className="card">
-        <p>
-          Cadastre pelo menos duas equipes em <Link to="/equipes">Equipes</Link>.
-        </p>
-      </section>
+      <div className="ui-stack ui-stack--section lyt-reading">
+        {header}
+        <EmptyState
+          action={
+            <Button to="/equipes" variant="secondary">
+              Cadastrar equipes
+            </Button>
+          }
+        >
+          Uma partida precisa de duas equipes. Cadastre pelo menos mais uma para começar.
+        </EmptyState>
+      </div>
     );
   }
   const options = teams.data.map((t) => (
@@ -46,35 +65,46 @@ export function NewMatch() {
     </option>
   ));
   return (
-    <section className="card">
-      <h1>Nova partida</h1>
-      <form onSubmit={create} className="stack">
-        <label>
-          Mandante (A)
-          <select value={home} onChange={(e) => setHome(e.target.value)} required>
+    <div className="ui-stack ui-stack--section lyt-reading">
+      {header}
+      <Card>
+        <form onSubmit={create} className="ui-form">
+          <SelectField
+            label="Mandante (A)"
+            value={home}
+            onChange={(e) => setHome(e.target.value)}
+            required
+          >
             <option value="">Escolha…</option>
             {options}
-          </select>
-        </label>
-        <label>
-          Visitante (B)
-          <select value={away} onChange={(e) => setAway(e.target.value)} required>
+          </SelectField>
+          <SelectField
+            label="Visitante (B)"
+            value={away}
+            onChange={(e) => setAway(e.target.value)}
+            error={home && home === away ? 'Escolha duas equipes diferentes.' : undefined}
+            required
+          >
             <option value="">Escolha…</option>
             {options}
-          </select>
-        </label>
-        <label>
-          Local
-          <input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Opcional" />
-        </label>
-        <p className="muted small">
-          A partida usa as <Link to="/regras">regras da entidade</Link>.
-        </p>
-        {error && <p className="status-error">{error}</p>}
-        <button type="submit" className="primary" disabled={!home || !away || home === away}>
-          Criar e escolher relacionados
-        </button>
-      </form>
-    </section>
+          </SelectField>
+          <TextField
+            label="Local (opcional)"
+            value={venue}
+            onChange={(e) => setVenue(e.target.value)}
+            placeholder="Ginásio da UFMT"
+          />
+          <p className="t-small t-muted">
+            A partida usa as <Link to="/regras">regras da entidade</Link>.
+          </p>
+          {error && <Notice tone="danger">{error}</Notice>}
+          <div className="ui-savebar">
+            <Button type="submit" variant="primary" disabled={!home || !away || home === away}>
+              Criar e escolher relacionados
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
   );
 }

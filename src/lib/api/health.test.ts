@@ -31,4 +31,33 @@ describe('fetchApiStatus', () => {
       message: 'Failed to fetch',
     });
   });
+
+  it('aponta banco ou storage fora quando /health/ready responde 503', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({ status: 'degraded', db: 'error', storage: 'ok', sportModules: {} }),
+            { status: 503 },
+          ),
+      ),
+    );
+    expect(await fetchApiStatus('http://api')).toEqual({
+      kind: 'degraded',
+      db: 'error',
+      storage: 'ok',
+    });
+  });
+
+  it('cai para /health quando a API não tem /health/ready', async () => {
+    const fetchMock = vi.fn(async (url: string) =>
+      url.endsWith('/ready')
+        ? new Response('{}', { status: 404 })
+        : new Response(JSON.stringify({ status: 'ok', sportModules: {} })),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    expect((await fetchApiStatus('http://api')).kind).toBe('mismatch');
+    expect(fetchMock).toHaveBeenCalledWith('http://api/health', expect.anything());
+  });
 });

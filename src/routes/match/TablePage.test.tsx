@@ -1,4 +1,4 @@
-import type { MatchStateResponse, StoredEvent } from '@neronu/api-contract';
+import type { MatchStateResponse, StoredEvent } from '../../lib/api/contract';
 import { defaultRules } from '@neronu/sport-basketball';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -76,9 +76,12 @@ afterEach(() => vi.unstubAllGlobals());
 
 const flush = () => act(() => new Promise((r) => setTimeout(r, 0)));
 const tap = (name: RegExp | string) => fireEvent.click(screen.getByRole('button', { name }));
-const player = (n: number, team: 'Casa' | 'Fora') => tap(new RegExp(`^Número ${n}, ${team}${n} `));
+/** Um toque por lançamento: o botão da própria linha do atleta. */
+const launch = (label: '+1' | '+2' | '+3' | 'Falta', n: number, team: 'Casa' | 'Fora') =>
+  tap(`${label} para o número ${n}, ${team}${n} Silva`);
+const board = () => screen.getByRole('region', { name: 'Placar' });
 
-it('anota um período em dois toques e não perde lances quando a conexão cai', async () => {
+const renderTable = () =>
   render(
     <MemoryRouter initialEntries={['/partidas/m1/mesa']}>
       <Routes>
@@ -86,26 +89,26 @@ it('anota um período em dois toques e não perde lances quando a conexão cai',
       </Routes>
     </MemoryRouter>,
   );
-  tap(await screen.findByRole('button', { name: /Iniciar 1º quarto/ }).then((b) => b.textContent!));
 
-  player(4, 'Casa');
-  tap('+3');
-  player(5, 'Fora');
-  tap('+2');
+it('anota com um toque por lançamento e não perde lances quando a conexão cai', async () => {
+  renderTable();
+  fireEvent.click(await screen.findByRole('button', { name: /Iniciar 1º quarto/ }));
+
+  launch('+3', 4, 'Casa');
+  launch('+2', 5, 'Fora');
   await flush();
   expect(fake.server.events).toHaveLength(3);
+  expect(screen.getByText(/\+2 · #5 Fora5 Silva/)).toBeInTheDocument();
 
-  // Cai a conexão: a mesa continua anotando.
+  // Cai a conexão: a mesa continua anotando e avisa numa faixa acima do rodapé.
   fake.server.down = true;
-  player(4, 'Casa');
-  tap('Falta');
-  player(6, 'Casa');
-  tap('+2');
+  launch('Falta', 4, 'Casa');
+  launch('+2', 6, 'Casa');
   await flush();
   expect(screen.getByRole('button', { name: /Sem conexão · 2 na fila/ })).toBeInTheDocument();
-  const board = document.querySelector('.scoreboard') as HTMLElement;
-  expect(within(board).getByText('5')).toBeInTheDocument();
-  expect(within(board).getByText('2')).toBeInTheDocument();
+  expect(screen.getByRole('alert')).toHaveTextContent(/Sem conexão\. 2 lançamento/);
+  expect(within(board()).getByText('5')).toBeInTheDocument();
+  expect(within(board()).getByText('2')).toBeInTheDocument();
 
   // Volta a conexão.
   fake.server.down = false;
@@ -123,30 +126,39 @@ it('anota um período em dois toques e não perde lances quando a conexão cai',
     'score',
   ]);
 
-  // Anula a última cesta pela lista de lances.
-  fireEvent.click(screen.getAllByRole('button', { name: 'Anular' })[0]!);
+  // Desfazer anula o último lançamento.
+  tap(/Desfazer/);
   await flush();
   expect(fake.server.events.at(-1)).toMatchObject({
     type: 'void',
     payload: { targetId: fake.server.events[4]!.id },
   });
-  expect(within(board).getByText('3')).toBeInTheDocument();
+  expect(within(board()).getByText('3')).toBeInTheDocument();
+
+  // E qualquer lance pode ser anulado pelo histórico em "Mais lançamentos".
+  tap(/Mais lançamentos/);
+  const sheet = screen.getByRole('dialog', { name: 'Mais lançamentos' });
+  fireEvent.click(within(sheet).getAllByRole('button', { name: 'Anular' })[0]!);
+  await flush();
+  expect(fake.server.events.at(-1)).toMatchObject({
+    type: 'void',
+    payload: { targetId: fake.server.events[3]!.id },
+  });
 });
 
 it('recusa na mesa o lance de atleta excluído', async () => {
-  render(
-    <MemoryRouter initialEntries={['/partidas/m1/mesa']}>
-      <Routes>
-        <Route path="/partidas/:id/mesa" element={<TablePage />} />
-      </Routes>
-    </MemoryRouter>,
-  );
+  renderTable();
   fireEvent.click(await screen.findByRole('button', { name: /Iniciar 1º quarto/ }));
-  for (let i = 0; i < 5; i++) {
-    player(7, 'Fora');
-    tap('Falta');
-  }
+  for (let i = 0; i < 5; i++) launch('Falta', 7, 'Fora');
   await flush();
-  expect(screen.getByRole('button', { name: /^Número 7, Fora7/ })).toBeDisabled();
-  expect(screen.getByText(/EXC/)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '+1 para o número 7, Fora7 Silva' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Falta para o número 7, Fora7 Silva' })).toBeDisabled();
+  expect(screen.getByText('EXC')).toBeInTheDocument();
+});
+
+it('mostra os botões de lançamento só durante o período', async () => {
+  renderTable();
+  await screen.findByRole('button', { name: /Iniciar 1º quarto/ });
+  expect(screen.getByRole('button', { name: '+2 para o número 4, Casa4 Silva' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: /Desfazer/ })).toBeDisabled();
 });

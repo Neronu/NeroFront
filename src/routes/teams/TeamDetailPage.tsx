@@ -1,18 +1,76 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router';
+import {
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Notice,
+  PageHeader,
+  SelectField,
+  Skeleton,
+  TextField,
+} from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
-import { useOrg } from '../../lib/session';
+import type { OrganizationAthlete, TeamDetail } from '../../lib/api/contract';
+import { useSession } from '../../lib/session';
 import { useAsync } from '../../lib/useAsync';
+import { TeamInvites } from './TeamInvites';
 
-/** Cadastro rápido: nome e número, um atrás do outro, sem sair da tela. */
+/**
+ * Equipe. Quem pode o quê vem da entidade da equipe:
+ * - admin da atlética: cadastro rápido (nome e número, um atrás do outro) e convites;
+ * - dono da equipe pessoal (atleta): convida atletas por e-mail e tira da equipe;
+ * - quem joga nela: vê o elenco.
+ */
 export function TeamDetailPage() {
   const { id = '' } = useParams();
-  const { org, isAdmin } = useOrg();
+  const { me, personalOrg } = useSession();
   const [team, reload] = useAsync(() => api.team(id), id);
-  const [athletes, reloadAthletes] = useAsync(() => api.orgAthletes(org.id), org.id);
+
+  if (team.status === 'loading') return <Skeleton lines={4} />;
+  if (team.status === 'error') return <ErrorState message={team.message} onRetry={reload} />;
+  const orgId = team.data.organizationId;
+  const membership = (me?.memberships ?? []).find((m) => m.organization.id === orgId);
+  const athletic = membership?.role === 'admin';
+  const owner = personalOrg?.id === orgId;
+
+  return (
+    <TeamView
+      team={team.data}
+      reload={reload}
+      athletic={athletic}
+      canManage={athletic || owner}
+      orgName={owner ? 'Sua equipe' : (membership?.organization.name ?? 'Equipe')}
+    />
+  );
+}
+
+function TeamView({
+  team: data,
+  reload,
+  athletic,
+  canManage,
+  orgName,
+}: {
+  team: TeamDetail;
+  reload(): void;
+  /** Admin da atlética dona da equipe: cadastra atletas direto. */
+  athletic: boolean;
+  /** Admin da atlética ou dono da equipe pessoal. */
+  canManage: boolean;
+  orgName: string;
+}) {
+  const id = data.id;
+  const orgId = data.organizationId;
+  const [athletes, reloadAthletes] = useAsync<OrganizationAthlete[]>(
+    () => (athletic ? api.orgAthletes(orgId) : Promise.resolve([])),
+    `${orgId}:${athletic}`,
+  );
   const [existing, setExisting] = useState('');
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
+  const [existingNumber, setExistingNumber] = useState('');
   const [error, setError] = useState('');
   const nameRef = useRef<HTMLInputElement>(null);
 
@@ -21,7 +79,7 @@ export function TeamDetailPage() {
     setError('');
     try {
       await api.createAthlete({
-        organizationId: org.id,
+        organizationId: orgId,
         name,
         teamId: id,
         ...(number ? { number: Number(number) } : {}),
@@ -40,9 +98,12 @@ export function TeamDetailPage() {
     e.preventDefault();
     setError('');
     try {
-      await api.putTeamPlayer(id, { athleteId: existing, number: number ? Number(number) : null });
+      await api.putTeamPlayer(id, {
+        athleteId: existing,
+        number: existingNumber ? Number(existingNumber) : null,
+      });
       setExisting('');
-      setNumber('');
+      setExistingNumber('');
       reload();
     } catch (err) {
       setError(errorMessage(err));
@@ -54,65 +115,95 @@ export function TeamDetailPage() {
     reload();
   };
 
-  if (team.status === 'loading') return <p className="muted">Carregando…</p>;
-  if (team.status === 'error') return <p className="status-error">{team.message}</p>;
+  const available =
+    athletes.status === 'ok'
+      ? athletes.data.filter((a) => !data.players.some((p) => p.athleteId === a.id))
+      : [];
+
   return (
-    <section className="card stack">
-      <h1>{team.data.name}</h1>
-      {isAdmin && (
-        <>
-          <form onSubmit={add} className="row">
-            <input
-              ref={nameRef}
-              placeholder="Nome do atleta"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-            <input
-              className="num-input"
-              placeholder="Nº"
-              inputMode="numeric"
-              pattern="[0-9]{1,2}"
-              value={number}
-              onChange={(e) => setNumber(e.target.value)}
-            />
-            <button type="submit" className="primary">
-              Adicionar
-            </button>
-          </form>
-          {athletes.status === 'ok' && (
-            <form onSubmit={addExisting} className="row">
-              <select value={existing} onChange={(e) => setExisting(e.target.value)} required>
-                <option value="">Atleta já cadastrado…</option>
-                {athletes.data
-                  .filter((a) => !team.data.players.some((p) => p.athleteId === a.id))
-                  .map((a) => (
+    <div className="ui-stack ui-stack--section">
+      <PageHeader eyebrow={orgName} title={data.name} />
+      {athletic && (
+        <Card>
+          <div className="ui-form">
+            <form onSubmit={add} className="ui-form-row">
+              <TextField
+                ref={nameRef}
+                label="Nome do atleta"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+              <TextField
+                label="Nº"
+                fieldClassName="ui-field--num"
+                inputMode="numeric"
+                pattern="[0-9]{1,2}"
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+              />
+              <Button type="submit" variant="primary">
+                Adicionar atleta
+              </Button>
+            </form>
+            {available.length > 0 && (
+              <form onSubmit={addExisting} className="ui-form-row">
+                <SelectField
+                  label="Atleta já cadastrado"
+                  value={existing}
+                  onChange={(e) => setExisting(e.target.value)}
+                  required
+                >
+                  <option value="">Escolha…</option>
+                  {available.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name}
                     </option>
                   ))}
-              </select>
-              <button type="submit">Pôr na equipe</button>
-            </form>
-          )}
-        </>
-      )}
-      {error && <p className="status-error">{error}</p>}
-      <ul className="list">
-        {team.data.players.map((p) => (
-          <li key={p.athleteId} className="row">
-            <span className="jersey">{p.number ?? '–'}</span>
-            <span className="grow">{p.name}</span>
-            {isAdmin && (
-              <button className="link danger" onClick={() => remove(p.athleteId)}>
-                Tirar
-              </button>
+                </SelectField>
+                <TextField
+                  label="Nº"
+                  fieldClassName="ui-field--num"
+                  inputMode="numeric"
+                  pattern="[0-9]{1,2}"
+                  value={existingNumber}
+                  onChange={(e) => setExistingNumber(e.target.value)}
+                />
+                <Button type="submit" variant="secondary">
+                  Pôr na equipe
+                </Button>
+              </form>
             )}
-          </li>
-        ))}
-      </ul>
-      {team.data.players.length === 0 && <p className="muted">Nenhum atleta ainda.</p>}
-    </section>
+            {error && <Notice tone="danger">{error}</Notice>}
+          </div>
+        </Card>
+      )}
+      {data.players.length === 0 ? (
+        <EmptyState>
+          {athletic
+            ? 'Nenhum atleta ainda. Adicione o primeiro acima.'
+            : canManage
+              ? 'Nenhum atleta ainda. Convide o primeiro abaixo.'
+              : 'Nenhum atleta ainda.'}
+        </EmptyState>
+      ) : (
+        <ul className="ui-list" aria-label="Atletas da equipe">
+          {data.players.map((p) => (
+            <li key={p.athleteId}>
+              <span className="ui-jersey">{p.number ?? '–'}</span>
+              <span className="ui-list__main">
+                <span className="ui-list__title">{p.name}</span>
+              </span>
+              {canManage && (
+                <Button variant="danger-text" onClick={() => remove(p.athleteId)}>
+                  Tirar da equipe
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {canManage && <TeamInvites teamId={id} onChange={reload} />}
+    </div>
   );
 }

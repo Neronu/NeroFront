@@ -1,4 +1,5 @@
-// Gera public/pwa-192.png e public/pwa-512.png (fundo escuro + bola laranja) sem dependências.
+// Gera public/pwa-192.png e public/pwa-512.png sem dependências: quadrado chapado em court com
+// um "N" em on-court, o mesmo desenho de public/favicon.svg (sem símbolo próprio, ver identidade).
 import { writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 
@@ -21,21 +22,37 @@ const chunk = (type, data) => {
   return Buffer.concat([len, td, crc]);
 };
 
+// Contorno do "N" em unidades de 64, igual ao path do favicon.svg.
+const N_SHAPE = [
+  [18, 50],
+  [18, 14],
+  [26, 14],
+  [38, 36],
+  [38, 14],
+  [46, 14],
+  [46, 50],
+  [38, 50],
+  [26, 28],
+  [26, 50],
+];
+const inside = (x, y) => {
+  let hit = false;
+  for (let i = 0, j = N_SHAPE.length - 1; i < N_SHAPE.length; j = i++) {
+    const [xi, yi] = N_SHAPE[i];
+    const [xj, yj] = N_SHAPE[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+  }
+  return hit;
+};
+
 function icon(size) {
-  const bg = [0x1c, 0x19, 0x17];
-  const ball = [0xea, 0x58, 0x0c];
-  const c = size / 2;
-  const r = size * 0.3;
-  const line = Math.max(2, size * 0.035);
+  const court = [0x00, 0x04, 0x43]; // azul Trojan #000443
+  const onCourt = [0xf5, 0xf4, 0xf3]; // branco #f5f4f3
   const raw = Buffer.alloc((size * 3 + 1) * size);
   for (let y = 0; y < size; y++) {
     raw[y * (size * 3 + 1)] = 0;
     for (let x = 0; x < size; x++) {
-      const dx = x + 0.5 - c;
-      const dy = y + 0.5 - c;
-      const inBall = dx * dx + dy * dy <= r * r;
-      const onSeam = Math.abs(dx) < line / 2 || Math.abs(dy) < line / 2;
-      const px = inBall && !onSeam ? ball : bg;
+      const px = inside(((x + 0.5) * 64) / size, ((y + 0.5) * 64) / size) ? onCourt : court;
       raw.set(px, y * (size * 3 + 1) + 1 + x * 3);
     }
   }

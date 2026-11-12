@@ -1,4 +1,4 @@
-import type { MatchStateResponse, PostEventRequest, StoredEvent } from '@neronu/api-contract';
+import type { MatchStateResponse, PostEventRequest, StoredEvent } from '../api/contract';
 import {
   basketball,
   type BasketballEvent,

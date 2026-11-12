@@ -1,5 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import {
+  Button,
+  Card,
+  ErrorState,
+  Notice,
+  PageHeader,
+  SelectField,
+  Skeleton,
+} from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import { useSession } from '../../lib/session';
 import { useAsync } from '../../lib/useAsync';
@@ -7,17 +16,22 @@ import { useAsync } from '../../lib/useAsync';
 /** Destino do link de convite: a entidade convidada aceita participar. */
 export function InviteAccept() {
   const { token = '' } = useParams();
-  const { me, refresh } = useSession();
+  const { me, refresh, personalOrg } = useSession();
   const [invite] = useAsync(() => api.invite(token), token);
-  const admins = (me?.memberships ?? []).filter(
-    (m) => m.role === 'admin' && !m.organization.isGuest,
-  );
+  // Atléticas que administra e, se tiver, a entidade pessoal (equipes criadas pelo atleta).
+  const admins = [
+    ...(me?.memberships ?? []).filter((m) => m.role === 'admin' && !m.organization.isGuest),
+    ...(personalOrg ? [{ organization: personalOrg, role: 'admin' as const }] : []),
+  ];
+  const label = (o: { name: string; isPersonal?: boolean }) =>
+    o.isPersonal ? 'suas equipes' : o.name;
   const [orgId, setOrgId] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  if (invite.status === 'loading') return <p className="muted">Carregando…</p>;
-  if (invite.status === 'error') return <p className="status-error">{invite.message}</p>;
+  if (invite.status === 'loading') return <Skeleton lines={3} />;
+  if (invite.status === 'error')
+    return <ErrorState title="Convite inválido" message={invite.message} />;
   const { championship, organizer, acceptedBy } = invite.data;
 
   const accept = async () => {
@@ -30,41 +44,46 @@ export function InviteAccept() {
     }
   };
 
+  const chosenOrg =
+    admins.find((a) => a.organization.id === orgId)?.organization ?? admins[0]?.organization;
+  const chosen = chosenOrg && label(chosenOrg);
+
   return (
-    <section className="card narrow stack">
-      <h1>{championship.name}</h1>
-      <p>
-        A <strong>{organizer.name}</strong> convidou sua entidade para o campeonato.
-      </p>
-      {acceptedBy && !admins.some((a) => a.organization.id === acceptedBy.id) ? (
-        <p className="status-warn">Este convite já foi usado pela {acceptedBy.name}.</p>
-      ) : admins.length === 0 ? (
+    <div className="ui-stack">
+      <PageHeader eyebrow="Convite" title={championship.name} />
+      <Card className="ui-stack">
         <p>
-          Você precisa administrar uma entidade para aceitar.{' '}
-          <Link to="/entidades/nova">Criar entidade</Link>
+          A <strong>{organizer.name}</strong> convidou sua entidade para o campeonato.
         </p>
-      ) : (
-        <>
-          {admins.length > 1 && (
-            <label>
-              Entidade
-              <select value={orgId} onChange={(e) => setOrgId(e.target.value)}>
+        {acceptedBy && !admins.some((a) => a.organization.id === acceptedBy.id) ? (
+          <Notice>Este convite já foi usado pela {acceptedBy.name}.</Notice>
+        ) : admins.length === 0 ? (
+          <p>
+            Para participar, crie uma equipe em <Link to="/equipes">Equipes</Link> e volte a este
+            link. Atléticas são cadastradas pela administração do Neronu.
+          </p>
+        ) : (
+          <>
+            {admins.length > 1 && (
+              <SelectField
+                label="Entidade"
+                value={orgId}
+                onChange={(e) => setOrgId(e.target.value)}
+              >
                 {admins.map((a) => (
                   <option key={a.organization.id} value={a.organization.id}>
-                    {a.organization.name}
+                    {a.organization.isPersonal ? 'Suas equipes' : a.organization.name}
                   </option>
                 ))}
-              </select>
-            </label>
-          )}
-          {error && <p className="status-error">{error}</p>}
-          <button className="primary" onClick={accept}>
-            Participar com{' '}
-            {admins.find((a) => a.organization.id === orgId)?.organization.name ??
-              admins[0]!.organization.name}
-          </button>
-        </>
-      )}
-    </section>
+              </SelectField>
+            )}
+            {error && <Notice tone="danger">{error}</Notice>}
+            <Button variant="primary" block onClick={accept}>
+              Participar com {chosen}
+            </Button>
+          </>
+        )}
+      </Card>
+    </div>
   );
 }

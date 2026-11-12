@@ -1,4 +1,4 @@
-import type { SportRulesResponse } from '@neronu/api-contract';
+import type { SportRulesResponse } from '../lib/api/contract';
 import { basketball } from '@neronu/sport-basketball';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';

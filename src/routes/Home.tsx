@@ -1,16 +1,26 @@
-import type { Match } from '@neronu/api-contract';
-import { useEffect, useState } from 'react';
+import type { Match } from '../lib/api/contract';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import {
+  Badge,
+  Button,
+  DataTable,
+  EmptyState,
+  ErrorState,
+  LiveBadge,
+  Skeleton,
+} from '../components/ui';
+import { ChampionshipCards } from '../components/ChampionshipCards';
+import { ChampionshipCodeSearch } from '../components/ChampionshipCodeSearch';
+import { TeamInvitesPanel } from '../components/TeamInvitesPanel';
 import { api } from '../lib/api/client';
-import { fetchApiStatus, type ApiStatus } from '../lib/api/health';
-import { API_URL } from '../lib/env';
-import { useOrg } from '../lib/session';
+import { useSession } from '../lib/session';
 import { useAsync } from '../lib/useAsync';
 
-const STATUS_LABEL: Record<Match['status'], string> = {
-  scheduled: 'Preparação',
-  in_progress: 'Em andamento',
-  closed: 'Súmula fechada',
+const STATUS: Record<Match['status'], ReactNode> = {
+  scheduled: <Badge>Preparação</Badge>,
+  in_progress: <LiveBadge />,
+  closed: <Badge tone="closed">Súmula fechada</Badge>,
 };
 
 export function matchLink(m: Pick<Match, 'id' | 'status'>): string {
@@ -19,106 +29,92 @@ export function matchLink(m: Pick<Match, 'id' | 'status'>): string {
   return `/partidas/${m.id}/mesa`;
 }
 
-/** Painel da entidade: campeonatos, partidas e cadastros. */
+/**
+ * Home logada: código do campeonato no topo, convites de equipe pendentes, o que está em
+ * andamento agora e, para a atlética, as partidas avulsas. A lista completa fica em Campeonatos.
+ */
 export function Home() {
-  const { org, isAdmin } = useOrg();
-  const [status, setStatus] = useState<ApiStatus | null>(null);
-  const [matches] = useAsync(() => api.matches(org.id), org.id);
-  const [championships] = useAsync(() => api.championships(org.id), org.id);
-
-  useEffect(() => {
-    const ctrl = new AbortController();
-    fetchApiStatus(API_URL, ctrl.signal).then(setStatus, () => {});
-    return () => ctrl.abort();
-  }, []);
+  const { org, role } = useSession();
+  const isAdmin = role === 'admin';
+  const [mine, reloadMine] = useAsync(() => api.myChampionships(), 'mine');
+  const now = mine.status === 'ok' ? mine.data.filter((c) => c.live || c.status === 'running') : [];
 
   return (
-    <div className="stack">
-      <section className="card stack">
-        <div className="row between">
-          <h1>Campeonatos</h1>
-          {isAdmin && (
-            <Link to="/campeonatos/novo" className="button primary">
-              Novo campeonato
-            </Link>
-          )}
+    <div className="ui-stack ui-stack--section">
+      <h1 className="sr-only">Início</h1>
+      <ChampionshipCodeSearch label="Buscar campeonato pelo código" hideLabel />
+      <TeamInvitesPanel />
+
+      <section className="ui-stack" aria-labelledby="home-champs">
+        <div className="ui-section-head">
+          <h2 id="home-champs">Em andamento</h2>
+          <Button to="/campeonatos" variant="quiet">
+            Ver todos os campeonatos
+          </Button>
         </div>
-        {championships.status === 'error' && (
-          <p className="status-error">{championships.message}</p>
-        )}
-        {championships.status === 'ok' &&
-          (championships.data.length === 0 ? (
-            <p className="muted">Nenhum campeonato ainda.</p>
+        {mine.status === 'loading' && <Skeleton />}
+        {mine.status === 'error' && <ErrorState message={mine.message} onRetry={reloadMine} />}
+        {mine.status === 'ok' &&
+          (now.length === 0 ? (
+            <EmptyState>
+              {org && isAdmin
+                ? 'Nenhum campeonato em andamento. Crie um em Campeonatos ou entre em um pelo código.'
+                : 'Nenhum campeonato em andamento. Quando sua equipe for inscrita, ele aparece aqui.'}
+            </EmptyState>
           ) : (
-            <ul className="list">
-              {championships.data.map((c) => (
-                <li key={c.id}>
-                  <Link to={`/campeonatos/${c.id}`} className="row between">
-                    <span>{c.name}</span>
-                    <span className="muted small">
-                      {c.organizer.id === org.id ? 'Organizadora' : c.organizer.name}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <ChampionshipCards items={now} label="Campeonatos em andamento" />
           ))}
       </section>
 
-      <section className="card stack">
-        <div className="row between">
-          <h1>Partidas</h1>
-          {isAdmin && (
-            <Link to="/partidas/nova" className="button">
-              Partida avulsa
-            </Link>
-          )}
-        </div>
-        {matches.status === 'loading' && <p className="muted">Carregando…</p>}
-        {matches.status === 'error' && <p className="status-error">{matches.message}</p>}
-        {matches.status === 'ok' &&
-          (matches.data.length === 0 ? (
-            <p className="muted">Nenhuma partida ainda.</p>
-          ) : (
-            <ul className="list">
-              {matches.data.map((m) => (
-                <li key={m.id}>
-                  <Link to={matchLink(m)} className="row between">
-                    <span>
-                      {m.homeTeam.name} × {m.awayTeam.name}
-                    </span>
-                    <span className="muted small">{STATUS_LABEL[m.status]}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ))}
-      </section>
-
-      <nav className="card tiles">
-        <Link to="/equipes">Equipes</Link>
-        <Link to="/atletas">Atletas</Link>
-        <Link to="/regras">Regras</Link>
-        <Link to="/membros">Membros</Link>
-      </nav>
-      <ApiBadge status={status} />
+      {org && <SingleMatches orgId={org.id} isAdmin={isAdmin} />}
     </div>
   );
 }
 
-function ApiBadge({ status }: { status: ApiStatus | null }) {
-  if (!status) return <p className="muted small">Verificando a API…</p>;
-  switch (status.kind) {
-    case 'ok':
-      return <p className="status-ok small">API online · módulo de basquete {status.apiVersion}</p>;
-    case 'mismatch':
-      return (
-        <p className="status-warn">
-          Versões incompatíveis: API {status.apiVersion}, este app {status.localVersion}. Atualize a
-          página.
-        </p>
-      );
-    case 'offline':
-      return <p className="status-error">API indisponível ({status.message})</p>;
-  }
+/** Partidas avulsas da atlética (amistosos e treinos). */
+function SingleMatches({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) {
+  const [matches, reloadMatches] = useAsync(() => api.matches(orgId), orgId);
+  return (
+    <>
+      <section className="ui-stack" aria-labelledby="home-matches">
+        <div className="ui-section-head">
+          <h2 id="home-matches">Partidas avulsas</h2>
+          {isAdmin && (
+            <Button to="/partidas/nova" variant="secondary">
+              Nova partida
+            </Button>
+          )}
+        </div>
+        {matches.status === 'loading' && <Skeleton />}
+        {matches.status === 'error' && (
+          <ErrorState message={matches.message} onRetry={reloadMatches} />
+        )}
+        {matches.status === 'ok' &&
+          (matches.data.length === 0 ? (
+            <EmptyState>
+              Nenhuma partida avulsa. Crie uma para anotar um amistoso ou treino.
+            </EmptyState>
+          ) : (
+            <DataTable
+              caption="Partidas avulsas"
+              rows={matches.data}
+              rowKey={(m) => m.id}
+              columns={[
+                {
+                  key: 'teams',
+                  header: 'Partida',
+                  lead: true,
+                  render: (m) => (
+                    <Link to={matchLink(m)}>
+                      {m.homeTeam.name} × {m.awayTeam.name}
+                    </Link>
+                  ),
+                },
+                { key: 'status', header: 'Situação', render: (m) => STATUS[m.status] },
+              ]}
+            />
+          ))}
+      </section>
+    </>
+  );
 }

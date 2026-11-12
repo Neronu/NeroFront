@@ -1,10 +1,18 @@
-import { Link } from 'react-router';
+import { Button, EmptyState, PageHeader } from '../components/ui';
 
 export function NotFound() {
   return (
-    <section className="card">
-      <p>Página não encontrada.</p>
-      <Link to="/">Voltar ao início</Link>
-    </section>
+    <div className="ui-stack">
+      <PageHeader title="Página não encontrada" />
+      <EmptyState
+        action={
+          <Button to="/" variant="secondary">
+            Voltar ao início
+          </Button>
+        }
+      >
+        O endereço não existe ou mudou. Volte ao início para continuar.
+      </EmptyState>
+    </div>
   );
 }

@@ -1,35 +1,37 @@
 import { isVoidEvent, voidedIds } from '@neronu/sport-core';
-import {
-  isInBonus,
-  periodLabel,
-  teamFoulsInPeriod,
-  timeoutsLeft,
-  totalFouls,
-  type PlayerFoulKind,
-  type PlayerState,
-  type Points,
-} from '@neronu/sport-basketball';
-import { useEffect, useMemo, useState } from 'react';
+import { periodLabel, type BasketballState, type PlayerState } from '@neronu/sport-basketball';
+import { RotateCw } from 'lucide-react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
+import { Button, ErrorState, Icon, Skeleton } from '../../components/ui';
 import { describeEvent, type Who } from '../../lib/match/describe';
-import type { Draft, TableSnapshot } from '../../lib/match/table';
+import type { Draft, TableEvent } from '../../lib/match/table';
 import { useMatchTable } from '../../lib/match/useMatchTable';
+import { MoreSheet } from './sumula/MoreSheet';
+import { SumulaFooter } from './sumula/SumulaFooter';
+import { SumulaTop, SyncButton } from './sumula/SumulaTop';
+import { TeamColumn } from './sumula/TeamColumn';
+import { FRAME_H, FRAME_W, useFrameFit } from './sumula/useFrameFit';
 
 type Side = 'home' | 'away';
 const SIDES: Side[] = ['home', 'away'];
 
+/**
+ * Súmula ao vivo (seção 14): quadro sempre 16:9, desenhado em 1280 × 720 e escalado para caber,
+ * com court nas sobras. Sem barra lateral e sem navegação global: só o jogo.
+ */
 export function TablePage() {
   const { id = '' } = useParams();
   const { table, snapshot, loadError } = useMatchTable(id);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [toast, setToast] = useState('');
-  const [teamPanel, setTeamPanel] = useState(false);
+  const fit = useFrameFit();
+  const [alert, setAlert] = useState('');
+  const [more, setMore] = useState(false);
 
   useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(''), 3500);
+    if (!alert) return;
+    const t = setTimeout(() => setAlert(''), 4000);
     return () => clearTimeout(t);
-  }, [toast]);
+  }, [alert]);
 
   const names = useMemo(() => {
     const map = new Map<string, Who>();
@@ -45,13 +47,23 @@ export function TablePage() {
 
   if (loadError) {
     return (
-      <div className="shell">
-        <p className="status-error">{loadError}</p>
-        <Link to="/">Voltar</Link>
+      <div className="lyt-content lyt-reading ui-stack">
+        <ErrorState title="Erro ao abrir a mesa" message={loadError} />
+        <div>
+          <Button to="/" variant="secondary">
+            Voltar ao painel
+          </Button>
+        </div>
       </div>
     );
   }
-  if (!snapshot) return <div className="shell muted">Carregando a partida…</div>;
+  if (!snapshot) {
+    return (
+      <div className="lyt-content">
+        <Skeleton lines={6} />
+      </div>
+    );
+  }
   if (
     snapshot.server.match.status === 'scheduled' &&
     snapshot.confirmed.length === 0 &&
@@ -63,354 +75,194 @@ export function TablePage() {
   const { state, server } = snapshot;
   const teamName = (side: Side) =>
     (side === 'home' ? server.match.homeTeam : server.match.awayTeam).name;
+  const nameOf = (athleteId: string) => names.get(athleteId)?.name ?? '';
   const closed = server.match.status === 'closed';
+  const canRecord = !closed && state.status === 'in_period';
 
-  const send = (draft: Draft) => {
+  /** Lança e mostra o resultado na hora; erro vira faixa danger com texto. */
+  const send = (draft: Draft): boolean => {
     const r = table.record(draft);
-    if (!r.ok) setToast(r.message);
-    setSelected(null);
-    if (r.ok && 'vibrate' in navigator) navigator.vibrate(30);
+    if (!r.ok) setAlert(r.message);
+    else if ('vibrate' in navigator) navigator.vibrate(30);
+    return r.ok;
+  };
+  const describe = (e: TableEvent) =>
+    describeEvent(
+      e,
+      (a) => names.get(a),
+      teamName,
+      (p) => periodLabel(state, p).toLowerCase(),
+    );
+  const voidEvent = (eventId: string) => {
+    const r = table.voidEvent(eventId);
+    if (!r.ok) setAlert(r.message);
   };
 
-  const player = selected ? state.players[selected] : undefined;
-  const nextPeriod = state.period + 1;
+  const all = [...snapshot.confirmed, ...snapshot.pending];
+  const voided = voidedIds(all);
+  const last = [...all].reverse().find((e) => !isVoidEvent(e) && !voided.has(e.id));
+  const pendingIds = new Set(snapshot.pending.map((e) => e.id));
+  const playersOf = (side: Side): PlayerState[] =>
+    Object.values(state.players)
+      .filter((p) => p.side === side)
+      .sort((a, b) => a.number - b.number);
+
+  const banners: ReactNode[] = [];
+  if (snapshot.sync === 'offline' || snapshot.sync === 'unauthorized') {
+    banners.push(
+      <div className="sm-banner" role="alert" key="sync">
+        <span>
+          {snapshot.sync === 'offline'
+            ? `Sem conexão. ${snapshot.pending.length} lançamento(s) na fila; continue anotando, eles serão enviados quando a conexão voltar.`
+            : `Sessão expirada. ${snapshot.pending.length} lançamento(s) na fila; entre de novo para enviar.`}
+        </span>
+        <button type="button" className="sm-banner__action" onClick={() => table.retryNow()}>
+          <Icon icon={RotateCw} />
+          Tentar de novo
+        </button>
+      </div>,
+    );
+  }
+  if (snapshot.rejections.length > 0) {
+    banners.push(
+      <div className="sm-banner" role="alert" key="rejected">
+        <span>
+          A API recusou {snapshot.rejections.length} lançamento(s):{' '}
+          {snapshot.rejections.map((r) => r.message).join(' ')}
+        </span>
+        <button
+          type="button"
+          className="sm-banner__action"
+          onClick={() => table.dismissRejections()}
+        >
+          Entendi
+        </button>
+      </div>,
+    );
+  }
+  if (alert) {
+    banners.push(
+      <div className="sm-banner" role="alert" key="alert">
+        <span>Erro: {alert}</span>
+      </div>,
+    );
+  }
 
   return (
-    <div className="table-screen">
-      <TopBar snapshot={snapshot} matchId={id} onRetry={() => table.retryNow()} />
-
-      <section className="scoreboard">
-        {SIDES.map((side) => (
-          <div key={side} className={`sb-team ${side}`}>
-            <div className="sb-name">
-              {side === 'home' ? 'A' : 'B'} · {teamName(side)}
-            </div>
-            <div className="sb-score">{state.teams[side].score}</div>
-            <div className="sb-meta">
-              <span className={isInBonus(state, side) ? 'bonus on' : 'bonus'}>
-                Faltas {teamFoulsInPeriod(state, side)}
-                {isInBonus(state, side) ? ' · BÔNUS' : ''}
-              </span>
-              <span>Tempos {timeoutsLeft(state, side)}</span>
-            </div>
-          </div>
-        ))}
-        <div className="sb-period">
-          {state.status === 'finished' ? 'Encerrado' : periodLabel(state)}
-        </div>
-      </section>
-
-      {snapshot.rejections.length > 0 && (
-        <div className="banner error" role="alert">
-          A API recusou {snapshot.rejections.length} lance(s):{' '}
-          {snapshot.rejections.map((r) => r.message).join(' ')}
-          <button onClick={() => table.dismissRejections()}>Ok</button>
-        </div>
-      )}
-
-      <PeriodControl
-        snapshot={snapshot}
-        matchId={id}
-        onStart={() => send({ type: 'period_start', payload: { period: nextPeriod } })}
-        onEnd={() => send({ type: 'period_end', payload: { period: state.period } })}
-        closed={closed}
-      />
-
-      <section className="rosters">
-        {SIDES.map((side) => (
-          <div key={side} className="roster-col">
-            {Object.values(state.players)
-              .filter((p) => p.side === side)
-              .sort((a, b) => a.number - b.number)
-              .map((p) => (
-                <PlayerButton
-                  key={p.athleteId}
-                  player={p}
-                  name={names.get(p.athleteId)?.name ?? ''}
-                  selected={selected === p.athleteId}
-                  disabled={closed || state.status !== 'in_period'}
-                  onClick={() => setSelected(selected === p.athleteId ? null : p.athleteId)}
-                />
-              ))}
-          </div>
-        ))}
-      </section>
-
-      {player && (
-        <ActionBar
-          player={player}
-          name={names.get(player.athleteId)?.name ?? ''}
-          onScore={(points) =>
-            send({ type: 'score', payload: { athleteId: player.athleteId, points } })
+    <div className="sm-viewport">
+      <div className="sm-rotate" role="status">
+        <Icon icon={RotateCw} size={24} />
+        <p>Gire o aparelho para usar a súmula.</p>
+      </div>
+      <div className="sm-fit" style={{ width: fit.width, height: fit.height }}>
+        <div
+          className={`sm-frame ${fit.compact ? 'is-compact' : ''}`}
+          style={
+            fit.compact
+              ? { width: fit.width, height: fit.height }
+              : { width: FRAME_W, height: FRAME_H, transform: `scale(${fit.scale})` }
           }
-          onFoul={(kind) => send({ type: 'foul', payload: { athleteId: player.athleteId, kind } })}
-          onCancel={() => setSelected(null)}
-        />
-      )}
-
-      {!player && state.status === 'in_period' && !closed && (
-        <section className="team-actions">
-          <button className="link" onClick={() => setTeamPanel(!teamPanel)}>
-            {teamPanel ? 'Ocultar ações de equipe' : 'Tempo técnico e faltas do técnico'}
-          </button>
-          {teamPanel && (
-            <div className="team-grid">
-              {SIDES.map((side) => (
-                <div key={side} className="stack tight">
-                  <strong>{teamName(side)}</strong>
-                  <button onClick={() => send({ type: 'timeout', payload: { side } })}>
-                    Tempo ({timeoutsLeft(state, side)})
-                  </button>
-                  <button
-                    onClick={() =>
-                      send({ type: 'coach_foul', payload: { side, kind: 'technical' } })
-                    }
-                  >
-                    Técnica do técnico
-                  </button>
-                  <button
-                    onClick={() => send({ type: 'coach_foul', payload: { side, kind: 'bench' } })}
-                  >
-                    Técnica do banco
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      <EventLog
-        snapshot={snapshot}
-        describe={(e) =>
-          describeEvent(
-            e,
-            (a) => names.get(a),
-            teamName,
-            (p) => periodLabel(state, p).toLowerCase(),
-          )
-        }
-        onVoid={(eventId) => {
-          if (!confirm('Anular este lance?')) return;
-          const r = table.voidEvent(eventId);
-          if (!r.ok) setToast(r.message);
-        }}
-        closed={closed}
-      />
-
-      {toast && (
-        <div className="toast" role="status">
-          {toast}
+        >
+          <SumulaTop state={state} teamName={teamName} />
+          <div className="sm-body">
+            {SIDES.map((side) => (
+              <TeamColumn
+                key={side}
+                side={side}
+                teamName={teamName(side)}
+                players={playersOf(side)}
+                nameOf={nameOf}
+                disabled={!canRecord}
+                onScore={(p, points) =>
+                  send({ type: 'score', payload: { athleteId: p.athleteId, points } })
+                }
+                onFoul={(p) =>
+                  send({ type: 'foul', payload: { athleteId: p.athleteId, kind: 'personal' } })
+                }
+              />
+            ))}
+          </div>
+          {banners.length > 0 && <div className="sm-banners">{banners}</div>}
+          <SumulaFooter
+            last={last ? describe(last) : null}
+            lastPending={!!last && pendingIds.has(last.id)}
+            canUndo={!!last && !closed}
+            onUndo={() => last && voidEvent(last.id)}
+            onMore={() => setMore(true)}
+            sync={<SyncButton snapshot={snapshot} onRetry={() => table.retryNow()} />}
+            action={<MomentAction matchId={id} send={send} closed={closed} state={state} />}
+          />
         </div>
-      )}
+      </div>
+      <MoreSheet
+        open={more}
+        onClose={() => setMore(false)}
+        state={state}
+        snapshot={snapshot}
+        teamName={teamName}
+        nameOf={nameOf}
+        canRecord={canRecord}
+        closed={closed}
+        send={send}
+        describe={describe}
+        onVoid={voidEvent}
+      />
     </div>
   );
 }
 
-function TopBar({
-  snapshot,
+/** A ação do momento, em brand: iniciar, encerrar o período ou conferir a súmula. */
+function MomentAction({
   matchId,
-  onRetry,
-}: {
-  snapshot: TableSnapshot;
-  matchId: string;
-  onRetry: () => void;
-}) {
-  const n = snapshot.pending.length;
-  const label =
-    snapshot.sync === 'synced'
-      ? 'Sincronizado'
-      : snapshot.sync === 'sending'
-        ? `Enviando ${n}…`
-        : snapshot.sync === 'unauthorized'
-          ? `Chave inválida · ${n} na fila`
-          : `Sem conexão · ${n} na fila`;
-  return (
-    <header className="table-top">
-      <Link to="/" aria-label="Voltar">
-        ‹ Partidas
-      </Link>
-      <button className={`sync ${snapshot.sync}`} onClick={onRetry} title="Tentar enviar agora">
-        {label}
-      </button>
-      {snapshot.state.status === 'finished' && (
-        <Link to={`/partidas/${matchId}/conferencia`}>Conferência ›</Link>
-      )}
-    </header>
-  );
-}
-
-function PeriodControl({
-  snapshot,
-  matchId,
-  onStart,
-  onEnd,
+  state,
   closed,
+  send,
 }: {
-  snapshot: TableSnapshot;
   matchId: string;
-  onStart: () => void;
-  onEnd: () => void;
+  state: BasketballState;
   closed: boolean;
+  send: (draft: Draft) => boolean;
 }) {
-  const { state } = snapshot;
+  const conferencia = `/partidas/${matchId}/conferencia`;
   if (closed) {
     return (
-      <Link className="button big" to={`/partidas/${matchId}/conferencia`}>
-        Súmula fechada · ver conferência
+      <Link to={conferencia} className="sm-btn sm-btn--primary">
+        Ver súmula fechada
       </Link>
     );
   }
   if (state.status === 'finished') {
     return (
-      <Link className="button primary big" to={`/partidas/${matchId}/conferencia`}>
-        Conferir e fechar a súmula
+      <Link to={conferencia} className="sm-btn sm-btn--primary">
+        Conferir súmula
       </Link>
     );
   }
   if (state.status === 'in_period') {
+    const label = periodLabel(state).toLowerCase();
     return (
       <button
-        className="big period-end"
-        onClick={() => confirm(`Encerrar o ${periodLabel(state).toLowerCase()}?`) && onEnd()}
+        type="button"
+        className="sm-btn sm-btn--primary"
+        onClick={() =>
+          confirm(`Encerrar o ${label}?`) &&
+          send({ type: 'period_end', payload: { period: state.period } })
+        }
       >
-        Encerrar {periodLabel(state).toLowerCase()}
+        Encerrar {label}
       </button>
     );
   }
+  const next = state.period + 1;
   const tied = state.teams.home.score === state.teams.away.score;
-  const label = periodLabel(state, state.period + 1).toLowerCase();
-  return (
-    <button className="primary big" onClick={onStart}>
-      Iniciar {label}
-      {state.period >= state.rules.periods && tied ? ' (empate)' : ''}
-    </button>
-  );
-}
-
-function PlayerButton({
-  player,
-  name,
-  selected,
-  disabled,
-  onClick,
-}: {
-  player: PlayerState;
-  name: string;
-  selected: boolean;
-  disabled: boolean;
-  onClick: () => void;
-}) {
-  const out = player.status !== 'active';
-  const fouls = totalFouls(player);
   return (
     <button
-      className={`player ${selected ? 'selected' : ''} ${out ? 'out' : ''}`}
-      onClick={onClick}
-      disabled={disabled || out}
-      aria-pressed={selected}
-      aria-label={`Número ${player.number}, ${name}`}
+      type="button"
+      className="sm-btn sm-btn--primary"
+      onClick={() => send({ type: 'period_start', payload: { period: next } })}
     >
-      <span className="p-num">{player.number}</span>
-      <span className="p-name">{name.split(' ')[0]}</span>
-      <span className="p-meta">
-        {out ? (player.status === 'fouled_out' ? 'EXC' : 'DESQ') : `${player.points} pts`}
-        <span className="dots" aria-label={`${fouls} faltas`}>
-          {'●'.repeat(fouls)}
-        </span>
-      </span>
+      Iniciar {periodLabel(state, next).toLowerCase()}
+      {state.period >= state.rules.periods && tied ? ' (empate)' : ''}
     </button>
-  );
-}
-
-function ActionBar({
-  player,
-  name,
-  onScore,
-  onFoul,
-  onCancel,
-}: {
-  player: PlayerState;
-  name: string;
-  onScore: (p: Points) => void;
-  onFoul: (k: PlayerFoulKind) => void;
-  onCancel: () => void;
-}) {
-  return (
-    <section className="action-bar" aria-label={`Ações para o número ${player.number}`}>
-      <div className="row between">
-        <strong>
-          #{player.number} {name}
-        </strong>
-        <button className="link" onClick={onCancel}>
-          Cancelar
-        </button>
-      </div>
-      <div className="actions-main">
-        <button className="act score" onClick={() => onScore(1)}>
-          +1
-        </button>
-        <button className="act score" onClick={() => onScore(2)}>
-          +2
-        </button>
-        <button className="act score" onClick={() => onScore(3)}>
-          +3
-        </button>
-        <button className="act foul" onClick={() => onFoul('personal')}>
-          Falta
-        </button>
-      </div>
-      <div className="actions-more">
-        <button onClick={() => onFoul('technical')}>Técnica</button>
-        <button onClick={() => onFoul('unsportsmanlike')}>Antidesportiva</button>
-        <button onClick={() => onFoul('disqualifying')}>Desqualificante</button>
-      </div>
-    </section>
-  );
-}
-
-function EventLog({
-  snapshot,
-  describe,
-  onVoid,
-  closed,
-}: {
-  snapshot: TableSnapshot;
-  describe: (e: TableSnapshot['confirmed'][number]) => string;
-  onVoid: (id: string) => void;
-  closed: boolean;
-}) {
-  const all = [...snapshot.confirmed, ...snapshot.pending];
-  const voided = voidedIds(all);
-  const pending = new Set(snapshot.pending.map((e) => e.id));
-  const recent = all
-    .filter((e) => !isVoidEvent(e))
-    .slice(-10)
-    .reverse();
-  if (!recent.length) return null;
-  return (
-    <section className="event-log">
-      <h2>Últimos lances</h2>
-      <ul>
-        {recent.map((e) => (
-          <li key={e.id} className={voided.has(e.id) ? 'voided' : ''}>
-            <span className="grow">
-              {describe(e)}
-              {pending.has(e.id) && (
-                <span className="pending-dot" title="Ainda não enviado">
-                  {' '}
-                  ●
-                </span>
-              )}
-            </span>
-            {!voided.has(e.id) && !closed && (
-              <button className="link danger" onClick={() => onVoid(e.id)}>
-                Anular
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
