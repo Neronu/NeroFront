@@ -1,5 +1,2 @@
 onlyBuiltDependencies:
   - esbuild
-overrides:
-  '@neronu/sport-basketball-3x3': link:../neroBack/packages/sport-basketball-3x3
-  '@neronu/sport-basketball': link:../neroBack/packages/sport-basketball
