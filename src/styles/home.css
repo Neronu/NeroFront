@@ -58,36 +58,44 @@
   text-align: left;
 }
 
-/* Logado: "Meus campeonatos" em cartões. */
+/* Logado: "Meus campeonatos" em lista contínua, linhas separadas por line. */
 .my-champs {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: var(--space-3);
+  border-block: 1px solid var(--line);
 }
-@media (min-width: 768px) {
-  .my-champs {
-    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
-  }
+.my-champs > li + li {
+  border-top: 1px solid var(--line);
 }
 .my-champ {
   position: relative;
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+}
+.my-champ__main {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-1);
-  height: 100%;
+  min-width: 0;
+}
+.my-champ__main p {
+  margin: 0;
 }
 .my-champ__name a {
   color: var(--ink);
   text-decoration: none;
 }
-/* O cartão inteiro é clicável, mas o link continua sendo o nome. */
+.my-champ__name a:hover {
+  color: var(--brand);
+}
+/* A linha inteira é clicável, mas o link continua sendo o nome. */
 .my-champ__name a::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: inherit;
 }
 .my-champ__name a:focus-visible::after {
   outline: 2px solid var(--brand);
@@ -98,10 +106,33 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-top: var(--space-2);
+}
+/* A partir de bp-sm: nome e meta à esquerda, código e selo à direita. */
+@media (min-width: 480px) {
+  .my-champ {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+  .my-champ__foot {
+    flex: none;
+    justify-content: flex-end;
+  }
 }
 
-/* No painel, o campo de código não se estica além da largura de leitura. */
-.lyt-painel .code-search {
+/* Home logada: coluna central, busca no topo e campeonatos logo abaixo. */
+.home-dash {
+  width: 100%;
   max-width: var(--reading-max);
+  margin-inline: auto;
+}
+.home-dash > .code-search {
+  max-width: 30rem;
+  margin-inline: auto;
+}
+@media (min-width: 768px) {
+  .home-dash {
+    padding-top: var(--space-8);
+  }
 }

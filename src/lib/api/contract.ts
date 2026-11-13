@@ -19,9 +19,12 @@ export type ApiErrorCode =
   | 'transfer_used'
   | 'not_guest_team'
   | 'merge_conflict'
+  | 'match_live'
   | 'conflict'
   | 'duplicate_athlete'
-  | 'rate_limited';
+  | 'duplicate_number'
+  | 'rate_limited'
+  | 'format_mismatch';
 
 export interface Organization extends C.Organization {
   /** A entidade declarou ter autorização dos atletas para publicar os dados (E9). */
@@ -34,16 +37,33 @@ export interface Registration extends Omit<C.Registration, 'organization'> {
   organization: Organization;
 }
 
+/** Formato da disputa, escolhido na criação: a tabela é gerada nele. */
+export type ChampionshipFormat = 'knockout' | 'round_robin' | 'groups_knockout';
+
+export interface Championship extends C.Championship {
+  /** Nulo em campeonatos criados antes do campo existir. */
+  format: ChampionshipFormat | null;
+}
+
+export type CreateChampionshipRequest = C.CreateChampionshipRequest & {
+  format: ChampionshipFormat;
+};
+
 export interface ChampionshipDetail extends Omit<
   C.ChampionshipDetail,
   'participants' | 'myOrganizations'
 > {
+  format: ChampionshipFormat | null;
   participants: Organization[];
   myOrganizations: Organization[];
 }
 
+/**
+ * Três perfis (atleta, atlética, admin da plataforma), sem papéis: `organizations` são as
+ * atléticas cujo e-mail é o da conta.
+ */
 export interface MeResponse extends Omit<C.MeResponse, 'memberships'> {
-  memberships: { organization: Organization; role: C.MemberRole }[];
+  organizations: Organization[];
   /** Cadastros de atleta ligados à conta pelo e-mail confirmado (E10). */
   athletes: { id: string; name: string; organization: Organization }[];
   /** Admin da plataforma: cria atléticas e consulta todo o sistema (só leitura). */
@@ -52,11 +72,19 @@ export interface MeResponse extends Omit<C.MeResponse, 'memberships'> {
   personalOrganization: Organization | null;
 }
 
-/** Só o admin da plataforma cria atléticas; `adminEmail` é o responsável. */
-export type CreateOrganizationRequest = C.CreateOrganizationRequest & {
-  adminEmail: string;
+/** Só o admin da plataforma cria atléticas; quem entra com `email` gerencia a atlética. */
+export interface CreateOrganizationRequest {
+  name: string;
+  /** E-mail da atlética. */
+  email: string;
+  slug?: string;
   publicationConsent?: boolean;
-};
+}
+
+/** Admin da plataforma troca o e-mail da atlética. */
+export interface UpdateOrganizationAccountRequest {
+  email: string;
+}
 
 export type CreateGuestTeamRequest = C.CreateGuestTeamRequest & {
   publicationConsent?: boolean;
@@ -114,7 +142,7 @@ export interface LeaderboardsResponse {
   boards: { key: string; label: string; stat: string; rows: LeaderboardRow[] }[];
 }
 
-export interface MyChampionship extends C.Championship {
+export interface MyChampionship extends Championship {
   /** Alguma partida em andamento agora. */
   live: boolean;
 }
@@ -252,6 +280,11 @@ export interface ReadyResponse {
   status: 'ok' | 'degraded';
   db: 'ok' | 'error';
   storage: 'ok' | 'error';
+  /**
+   * `pending`: o banco não recebeu migrações desta versão da API (escritas podem falhar).
+   * Opcional porque a API antes desse campo não o envia.
+   */
+  migrations?: 'ok' | 'pending' | 'error';
   sportModules: Record<string, string>;
 }
 
@@ -264,19 +297,22 @@ export interface AdminUser {
   emailVerified: boolean;
   createdAt: string;
   isSystemAdmin: boolean;
-  memberships: { organization: Organization; role: C.MemberRole }[];
+  /** Atléticas com o e-mail desta conta. */
+  organizations: Organization[];
   athleteCount: number;
 }
 
 export interface AdminOrganization extends Organization {
   createdAt: string;
-  memberCount: number;
   athleteCount: number;
   championshipCount: number;
-  admins: { name: string | null; email: string; pending: boolean }[];
+  /** E-mail da atlética (null nas convidadas). */
+  email: string | null;
+  /** Nome da conta com esse e-mail, se já existe. */
+  accountName: string | null;
 }
 
-export interface AdminChampionship extends C.Championship {
+export interface AdminChampionship extends Championship {
   createdAt: string;
   registrationCount: number;
 }
@@ -318,4 +354,22 @@ export interface TeamInvite {
   status: TeamInviteStatus;
   invitedBy: { name: string } | null;
   createdAt: string;
+}
+
+/** Link fixo de convite da equipe; quem abre entra logado. */
+export interface TeamInviteLink {
+  token: string;
+  /** Caminho no app: `/equipes/convite/:token`. */
+  path: string;
+}
+
+export interface TeamLinkPreview {
+  team: { id: string; name: string };
+  organization: Organization;
+  /** Quem abriu já joga na equipe. */
+  alreadyMember: boolean;
+}
+
+export interface JoinTeamRequest {
+  number?: number;
 }

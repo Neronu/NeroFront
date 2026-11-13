@@ -27,15 +27,15 @@ const org = {
 beforeEach(() => vi.clearAllMocks());
 
 describe('admin da plataforma', () => {
-  it('lista atléticas com responsáveis e busca pelo ?q=', async () => {
+  it('lista atléticas com o e-mail e busca pelo ?q=', async () => {
     api.adminOrganizations.mockResolvedValue([
       {
         ...org,
         createdAt: '2026-11-12T10:00:00Z',
-        memberCount: 2,
         athleteCount: 30,
         championshipCount: 1,
-        admins: [{ name: null, email: 'ana@ex.com', pending: true }],
+        email: 'ana@ex.com',
+        accountName: null,
       },
     ]);
     render(
@@ -46,7 +46,7 @@ describe('admin da plataforma', () => {
       </MemoryRouter>,
     );
     const table = await screen.findByRole('table', { name: 'Atléticas' });
-    expect(within(table).getByText('ana@ex.com (convite pendente)')).toBeInTheDocument();
+    expect(within(table).getByText(/ana@ex\.com \(sem conta ainda\)/)).toBeInTheDocument();
     expect(api.adminOrganizations).toHaveBeenCalledWith('comp');
     expect(screen.getByLabelText('Buscar por nome ou código')).toHaveValue('comp');
   });
@@ -60,7 +60,7 @@ describe('admin da plataforma', () => {
         emailVerified: true,
         createdAt: '2026-11-12T10:00:00Z',
         isSystemAdmin: true,
-        memberships: [{ organization: org, role: 'scorer' }],
+        organizations: [org],
         athleteCount: 1,
       },
     ]);
@@ -70,12 +70,12 @@ describe('admin da plataforma', () => {
       </MemoryRouter>,
     );
     expect(
-      await screen.findByText('Atleta · Atlética Computação (mesário) · Admin da plataforma'),
+      await screen.findByText('Atleta · Atlética: Atlética Computação · Admin da plataforma'),
     ).toBeInTheDocument();
     expect(api.adminUsers).toHaveBeenCalledWith('');
   });
 
-  it('nova atlética envia o e-mail do responsável e volta à lista', async () => {
+  it('nova atlética envia o e-mail da atlética e volta à lista', async () => {
     api.createOrganization.mockResolvedValue(org);
     render(
       <MemoryRouter initialEntries={['/admin/atleticas/nova']}>
@@ -86,14 +86,14 @@ describe('admin da plataforma', () => {
       </MemoryRouter>,
     );
     fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Atlética Computação' } });
-    fireEvent.change(screen.getByLabelText(/E-mail do responsável/), {
+    fireEvent.change(screen.getByLabelText(/E-mail da atlética/), {
       target: { value: ' ana@ex.com ' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Cadastrar atlética' }));
     expect(await screen.findByText('lista')).toBeInTheDocument();
     expect(api.createOrganization).toHaveBeenCalledWith({
       name: 'Atlética Computação',
-      adminEmail: 'ana@ex.com',
+      email: 'ana@ex.com',
       publicationConsent: false,
     });
   });

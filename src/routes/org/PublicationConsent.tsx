@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, Notice } from '../../components/ui';
+import { Button, Group, Notice } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import { useOrg, useSession } from '../../lib/session';
 
@@ -35,7 +35,7 @@ export function PublicationConsentCheck({
 
 /** Seção "Publicação" das configurações: estado da declaração e como mudar (só admin). */
 export function PublicationSettings() {
-  const { org, isAdmin } = useOrg();
+  const { org } = useOrg();
   const session = useSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -58,7 +58,7 @@ export function PublicationSettings() {
   return (
     <section className="ui-stack" aria-labelledby="settings-publication">
       <h2 id="settings-publication">Publicação</h2>
-      <Card className="ui-stack">
+      <Group className="ui-stack">
         {org.publicationConsent ? (
           <Notice tone="positive">
             A entidade declarou ter autorização dos atletas. As páginas públicas mostram nome,
@@ -74,21 +74,19 @@ export function PublicationSettings() {
           Um atleta que pedir para não aparecer pode ter o perfil ocultado na lista de Atletas.
         </p>
         {error && <Notice tone="danger">{error}</Notice>}
-        {isAdmin && (
-          <div>
-            {org.publicationConsent ? (
-              <Button variant="secondary" disabled={busy} onClick={() => void set(false)}>
-                Retirar declaração
-              </Button>
-            ) : (
-              <Button variant="primary" disabled={busy} onClick={() => void set(true)}>
-                Declarar autorização
-              </Button>
-            )}
-          </div>
-        )}
-        {isAdmin && !org.publicationConsent && <p className="t-small">{CONSENT_TEXT}</p>}
-      </Card>
+        <div>
+          {org.publicationConsent ? (
+            <Button variant="secondary" disabled={busy} onClick={() => void set(false)}>
+              Retirar declaração
+            </Button>
+          ) : (
+            <Button variant="primary" disabled={busy} onClick={() => void set(true)}>
+              Declarar autorização
+            </Button>
+          )}
+        </div>
+        {!org.publicationConsent && <p className="t-small">{CONSENT_TEXT}</p>}
+      </Group>
     </section>
   );
 }

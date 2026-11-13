@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router';
 import { SportStatsTable } from '../../components/SportStatsTable';
-import { Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '../../components/ui';
+import { Button, Group, EmptyState, ErrorState, PageHeader, Skeleton } from '../../components/ui';
 import { api, HttpError } from '../../lib/api/client';
 import type { PublicAthlete } from '../../lib/api/contract';
 import { useAsync } from '../../lib/useAsync';
@@ -47,7 +47,7 @@ export function PublicAthletePage() {
       <PageHeader eyebrow="Atleta" title={athlete.name} meta={athlete.organization.name} />
 
       {current && (
-        <Card aria-labelledby="atleta-atual" className="ui-stack">
+        <Group aria-labelledby="atleta-atual" className="ui-stack">
           <span id="atleta-atual" className="t-label">
             Campeonato atual
           </span>
@@ -57,7 +57,7 @@ export function PublicAthletePage() {
             {current.number != null && ` · nº ${current.number}`} ·{' '}
             <span className="t-stat">{current.games}</span> {current.games === 1 ? 'jogo' : 'jogos'}
           </span>
-        </Card>
+        </Group>
       )}
 
       {athlete.sports.length === 0 ? (

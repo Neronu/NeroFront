@@ -1,14 +1,60 @@
+import { Copy, RefreshCw } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { Badge, Button, Card, Notice, TextField } from '../../components/ui';
+import { Badge, Button, Group, Icon, Notice, Skeleton, TextField } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import type { TeamInvite } from '../../lib/api/contract';
 import { useAsync } from '../../lib/useAsync';
+import { useCopy } from '../../lib/useCopy';
 
 const STATUS: Record<TeamInvite['status'], { label: string; tone: 'neutral' | 'closed' }> = {
   pending: { label: 'Aguardando', tone: 'neutral' },
   accepted: { label: 'Aceito', tone: 'closed' },
   declined: { label: 'Recusado', tone: 'closed' },
 };
+
+/**
+ * Link fixo para entrar na equipe: o dono copia e manda (ex.: no grupo do time). Quem abre entra
+ * logado, escolhendo o número. Gerar outro link invalida o anterior.
+ */
+function InviteLink({ teamId }: { teamId: string }) {
+  const [link, reload] = useAsync(() => api.teamInviteLink(teamId), `team-link-${teamId}`);
+  const { copied, copy } = useCopy();
+  const [error, setError] = useState('');
+
+  const reset = async () => {
+    if (!confirm('Gerar um novo link? O link atual deixa de funcionar.')) return;
+    setError('');
+    try {
+      await api.resetTeamInviteLink(teamId);
+      reload();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
+  if (link.status === 'loading') return <Skeleton lines={1} />;
+  if (link.status === 'error') return <Notice tone="danger">{link.message}</Notice>;
+  const url = `${window.location.origin}${link.data.path}`;
+  return (
+    <div className="ui-stack">
+      <p className="t-small t-muted">
+        Quem abrir o link entra na equipe com a própria conta e escolhe o número.
+      </p>
+      <div className="ui-form-row team-link">
+        <code className="ch-invite-url team-link__url">{url}</code>
+        <Button variant="secondary" onClick={() => void copy(url)}>
+          <Icon icon={Copy} />
+          {copied === url ? 'Copiado' : 'Copiar link'}
+        </Button>
+        <Button variant="quiet" onClick={() => void reset()}>
+          <Icon icon={RefreshCw} />
+          Gerar novo
+        </Button>
+      </div>
+      {error && <Notice tone="danger">{error}</Notice>}
+    </div>
+  );
+}
 
 /**
  * Convites por e-mail para jogar na equipe. A pessoa aceita na conta dela (quem não tem conta
@@ -54,7 +100,11 @@ export function TeamInvites({ teamId, onChange }: { teamId: string; onChange(): 
   return (
     <section className="ui-stack" aria-labelledby="team-invites-head">
       <h2 id="team-invites-head">Convidar atletas</h2>
-      <Card>
+      <Group>
+        <InviteLink teamId={teamId} />
+      </Group>
+      <h3>Por e-mail</h3>
+      <Group>
         <form onSubmit={send} className="ui-form">
           <div className="ui-form-row">
             <TextField
@@ -88,7 +138,7 @@ export function TeamInvites({ teamId, onChange }: { teamId: string; onChange(): 
             </Notice>
           )}
         </form>
-      </Card>
+      </Group>
       {invites.status === 'ok' && invites.data.length > 0 && (
         <ul className="ui-list" aria-label="Convites enviados">
           {invites.data.map((i) => (

@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "@neronu/api-contract": "1.0.0",
-    "@neronu/sport-basketball": "0.1.0",
+    "@neronu/sport-basketball": "link:../neroBack/packages/sport-basketball",
+    "@neronu/sport-basketball-3x3": "link:../neroBack/packages/sport-basketball-3x3",
     "@neronu/sport-core": "1.0.0",
     "lucide-react": "^1.72.0",
     "react": "^19.3.1",

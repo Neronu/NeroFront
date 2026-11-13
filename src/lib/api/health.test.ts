@@ -16,6 +16,14 @@ describe('compareModule', () => {
         .kind,
     ).toBe('mismatch');
   });
+  it('confere também o 3x3 quando a API o publica', () => {
+    expect(
+      compareModule({
+        status: 'ok',
+        sportModules: { basketball: `${major}.0.0`, basketball_3x3: '99.0.0' },
+      }),
+    ).toMatchObject({ kind: 'mismatch', sport: 'Basquete 3x3' });
+  });
   it('acusa módulo ausente na API', () => {
     expect(compareModule({ status: 'ok', sportModules: {} }).kind).toBe('mismatch');
   });
@@ -47,6 +55,30 @@ describe('fetchApiStatus', () => {
       kind: 'degraded',
       db: 'error',
       storage: 'ok',
+      migrations: 'ok',
+    });
+  });
+
+  it('aponta migrações pendentes', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              status: 'degraded',
+              db: 'ok',
+              storage: 'ok',
+              migrations: 'pending',
+              sportModules: {},
+            }),
+            { status: 503 },
+          ),
+      ),
+    );
+    expect(await fetchApiStatus('http://api')).toMatchObject({
+      kind: 'degraded',
+      migrations: 'pending',
     });
   });
 

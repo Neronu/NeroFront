@@ -1,22 +1,21 @@
 import { isVoidEvent, voidedIds } from '@neronu/sport-core';
-import { timeoutsLeft, type BasketballState, type PlayerFoulKind } from '@neronu/sport-basketball';
 import { useState } from 'react';
 import { Button, Notice, Overlay, SelectField } from '../../../components/ui';
-import { FOUL_LABEL } from '../../../lib/match/describe';
-import type { Draft, TableEvent, TableSnapshot } from '../../../lib/match/table';
+import { FOUL_LABEL, SPECIAL_FOULS, type SportTable } from '../../../lib/match/sport-table';
+import type { Draft, SportState, TableEvent, TableSnapshot } from '../../../lib/match/table';
 
 type Side = 'home' | 'away';
 const SIDES: Side[] = ['home', 'away'];
-const SPECIAL: PlayerFoulKind[] = ['technical', 'unsportsmanlike', 'disqualifying'];
 
 /**
- * Lançamentos fora da linha do atleta: faltas especiais, tempo e técnicas de equipe,
+ * Lançamentos fora da linha do atleta: faltas especiais, ações de equipe do esporte (tempo, técnicas),
  * e o histórico com anulação. Ação de quadra, nunca escondida atrás de ícone.
  */
 export function MoreSheet({
   open,
   onClose,
   state,
+  sport,
   snapshot,
   teamName,
   nameOf,
@@ -28,7 +27,8 @@ export function MoreSheet({
 }: {
   open: boolean;
   onClose: () => void;
-  state: BasketballState;
+  state: SportState;
+  sport: SportTable;
   snapshot: TableSnapshot;
   teamName: (side: Side) => string;
   nameOf: (athleteId: string) => string;
@@ -39,7 +39,8 @@ export function MoreSheet({
   onVoid: (id: string) => void;
 }) {
   const [athleteId, setAthleteId] = useState('');
-  const active = Object.values(state.players)
+  const active = sport
+    .players(state)
     .filter((p) => p.status === 'active')
     .sort((a, b) => (a.side === b.side ? a.number - b.number : a.side === 'home' ? -1 : 1));
 
@@ -59,7 +60,7 @@ export function MoreSheet({
     <Overlay open={open} onClose={onClose} title="Mais lançamentos">
       <div className="ui-stack ui-stack--section">
         {!canRecord && !closed && (
-          <Notice>Inicie o período para lançar faltas, tempos e técnicas.</Notice>
+          <Notice>Inicie o período para lançar faltas e ações de equipe.</Notice>
         )}
         <section className="ui-stack" aria-labelledby="more-fouls">
           <h3 id="more-fouls">Faltas especiais</h3>
@@ -77,7 +78,7 @@ export function MoreSheet({
             ))}
           </SelectField>
           <div className="ui-form-row">
-            {SPECIAL.map((kind) => (
+            {SPECIAL_FOULS.map((kind) => (
               <Button
                 key={kind}
                 variant="secondary"
@@ -96,27 +97,16 @@ export function MoreSheet({
             {SIDES.map((side) => (
               <div key={side} className="ui-stack">
                 <span className="t-label t-muted">{teamName(side)}</span>
-                <Button
-                  variant="secondary"
-                  disabled={!canRecord}
-                  onClick={() => run({ type: 'timeout', payload: { side } })}
-                >
-                  Pedir tempo ({timeoutsLeft(state, side)} restantes)
-                </Button>
-                <Button
-                  variant="secondary"
-                  disabled={!canRecord}
-                  onClick={() => run({ type: 'coach_foul', payload: { side, kind: 'technical' } })}
-                >
-                  Técnica do técnico
-                </Button>
-                <Button
-                  variant="secondary"
-                  disabled={!canRecord}
-                  onClick={() => run({ type: 'coach_foul', payload: { side, kind: 'bench' } })}
-                >
-                  Técnica do banco
-                </Button>
+                {sport.teamActions(state, side).map((a) => (
+                  <Button
+                    key={a.key}
+                    variant="secondary"
+                    disabled={!canRecord}
+                    onClick={() => run(a.draft)}
+                  >
+                    {a.label}
+                  </Button>
+                ))}
               </div>
             ))}
           </div>

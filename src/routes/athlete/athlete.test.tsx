@@ -107,7 +107,7 @@ describe('área do atleta', () => {
   };
 
   it('sem cadastro ligado, explica como aparecer', () => {
-    session.me = { user: { email: 'bia@ex.com' }, memberships: [], athletes: [] };
+    session.me = { user: { email: 'bia@ex.com' }, organizations: [], athletes: [] };
     renderAt('/atleta', <AthleteArea />, '/atleta');
     expect(screen.getByText(/bia@ex\.com/)).toBeInTheDocument();
     expect(api.meAthleteChampionships).not.toHaveBeenCalled();
@@ -116,7 +116,7 @@ describe('área do atleta', () => {
   it('e-mail não confirmado: pede a confirmação', async () => {
     session.me = {
       user: { email: 'bia@ex.com' },
-      memberships: [],
+      organizations: [],
       athletes: [{ id: 'a1', name: 'Bia', organization: org }],
     };
     api.meAthleteChampionships.mockRejectedValue(
@@ -129,7 +129,7 @@ describe('área do atleta', () => {
   it('lista campeonatos atuais e passados com equipe e número', async () => {
     session.me = {
       user: { email: 'bia@ex.com' },
-      memberships: [],
+      organizations: [],
       athletes: [{ id: 'a1', name: 'Bia', organization: org }],
     };
     const item = (id: string, name: string, status: 'running' | 'finished') => ({

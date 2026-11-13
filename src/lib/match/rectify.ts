@@ -1,7 +1,7 @@
-import { basketball, type BasketballRules, type BasketballState } from '@neronu/sport-basketball';
-import { effectiveEvents, replayStrict, type MatchSetup } from '@neronu/sport-core';
+import { effectiveEvents, replayStrict, type MatchSetup, type RuleSet } from '@neronu/sport-core';
 import type { RectifyChange } from '../api/contract';
-import type { TableEvent } from './table';
+import type { AnySport } from '../sports';
+import type { SportState, TableEvent } from './table';
 
 type Effective = Exclude<TableEvent, { type: 'void' }>;
 
@@ -30,22 +30,23 @@ export function applyChanges(events: readonly TableEvent[], changes: readonly Re
 }
 
 export type Preview =
-  | { ok: true; state: BasketballState }
-  | { ok: false; message: string; event: Effective | undefined };
+  { ok: true; state: SportState } | { ok: false; message: string; event: Effective | undefined };
 
 /** Reaplica o jogo inteiro com as mudanças, validando cada lance, como a API fará. */
 export function previewRectification(
+  sport: AnySport,
   setup: MatchSetup,
-  rules: BasketballRules,
+  rules: RuleSet,
   events: readonly TableEvent[],
   changes: readonly RectifyChange[],
 ): Preview {
   const list = applyChanges(events, changes);
-  const result = replayStrict(basketball, setup, rules, list);
+  const result = replayStrict(sport, setup, rules, list);
   if (result.ok) {
-    if (result.state.status !== 'finished')
+    const state = result.state as SportState;
+    if (state.status !== 'finished')
       return { ok: false, message: 'Depois das mudanças o jogo não termina.', event: undefined };
-    return { ok: true, state: result.state };
+    return { ok: true, state };
   }
   return { ok: false, message: result.message, event: list[result.index] };
 }

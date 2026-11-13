@@ -96,7 +96,7 @@ describe('DataTable', () => {
       />,
     );
     const table = screen.getByRole('table', { name: 'Classificação' });
-    expect(table).toHaveClass('ui-table--cards');
+    expect(table).toHaveClass('ui-table--stacked');
     const cell = screen.getByText('5');
     expect(cell).toHaveClass('is-num');
     expect(cell).toHaveAttribute('data-label', 'Vitórias');

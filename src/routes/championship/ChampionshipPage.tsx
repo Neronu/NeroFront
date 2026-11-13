@@ -4,6 +4,7 @@ import {
   Badge,
   Button,
   ErrorState,
+  MetaGrid,
   PageHeader,
   Skeleton,
   TabPanel,
@@ -61,36 +62,36 @@ export function ChampionshipPage() {
   const tab = resolveTab(params.get('aba'), ch.status);
   const status = CHAMPIONSHIP_STATUS[ch.status];
 
-  const meta = [
-    `Organização: ${ch.organizer.name}`,
-    `Código: ${championshipCode(ch.slug)}`,
-    ch.startsAt && `Início ${formatDateTime(ch.startsAt)}`,
-    ch.rosterLockAt &&
-      (ch.rosterLocked
-        ? 'Elencos travados'
-        : `Elencos travam em ${formatDateTime(ch.rosterLockAt)}`),
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const meta = (
+    <MetaGrid
+      items={[
+        { label: 'Organização', value: ch.organizer.name },
+        { label: 'Código', value: championshipCode(ch.slug) },
+        !!ch.startsAt && { label: 'Início', value: formatDateTime(ch.startsAt) },
+        !!ch.rosterLockAt && {
+          label: 'Elencos',
+          value: ch.rosterLocked ? 'Travados' : `Travam em ${formatDateTime(ch.rosterLockAt)}`,
+        },
+      ]}
+    />
+  );
 
   return (
     <div className="ui-stack ui-stack--section">
       {/* Cabeçalho só em texto sobre bg, igual em todas as abas. Sem bloco de cor. */}
-      <div className="ui-stack">
-        <PageHeader
-          eyebrow={sportName(ch.sportKey)}
-          title={ch.name}
-          meta={meta}
-          action={
+      <PageHeader
+        eyebrow={sportName(ch.sportKey)}
+        title={ch.name}
+        meta={meta}
+        action={
+          <div className="ch-head-actions">
+            <Badge tone={status.tone}>{status.label}</Badge>
             <Button to={`/campeonatos/${id}/regras`} variant="quiet">
               {ch.canManage ? 'Regras do campeonato' : 'Ver regras'}
             </Button>
-          }
-        />
-        <div>
-          <Badge tone={status.tone}>{status.label}</Badge>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <div className="ui-stack">
         <Tabs
@@ -102,7 +103,7 @@ export function ChampionshipPage() {
         />
         <TabPanel tabKey={tab} idPrefix="ch">
           {tab === 'resultados' && <ResultsTab ch={ch} onChange={reload} />}
-          {tab === 'classificacao' && <StandingsTab id={id} />}
+          {tab === 'classificacao' && <StandingsTab id={id} sportKey={ch.sportKey} />}
           {tab === 'estatisticas' && <StatsTab id={id} />}
           {tab === 'equipes' && <TeamsTab ch={ch} onChange={reload} />}
         </TabPanel>

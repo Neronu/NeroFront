@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import {
   Button,
-  Card,
+  Group,
   EmptyState,
   ErrorState,
   Notice,
@@ -20,7 +20,7 @@ import { useAsync } from '../../lib/useAsync';
  * O admin pode ocultar o perfil público de um atleta, a pedido dele (E9).
  */
 export function Athletes() {
-  const { org, isAdmin } = useOrg();
+  const { org } = useOrg();
   const [list, reload] = useAsync(() => api.orgAthletes(org.id), org.id);
   const [form, setForm] = useState({ name: '', email: '', rga: '' });
   const [error, setError] = useState('');
@@ -52,49 +52,45 @@ export function Athletes() {
           <Link to="/configuracoes">Configurações</Link>.
         </Notice>
       )}
-      {isAdmin && (
-        <Card>
-          <form onSubmit={add} className="ui-form">
-            <div className="ui-form-row">
-              <TextField
-                label="Nome"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-              />
-              <TextField
-                label="E-mail (opcional)"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-              <TextField
-                label="RGA (opcional)"
-                value={form.rga}
-                onChange={(e) => setForm({ ...form, rga: e.target.value })}
-              />
-            </div>
-            <p className="t-small t-muted">E-mail e RGA nunca aparecem nas páginas públicas.</p>
-            {error && <Notice tone="danger">{error}</Notice>}
-            <div>
-              <Button type="submit" variant="primary" fluid>
-                Adicionar atleta
-              </Button>
-            </div>
-          </form>
-        </Card>
-      )}
+      <Group>
+        <form onSubmit={add} className="ui-form">
+          <div className="ui-form-row">
+            <TextField
+              label="Nome"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
+            />
+            <TextField
+              label="E-mail (opcional)"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+            <TextField
+              label="RGA (opcional)"
+              value={form.rga}
+              onChange={(e) => setForm({ ...form, rga: e.target.value })}
+            />
+          </div>
+          <p className="t-small t-muted">E-mail e RGA nunca aparecem nas páginas públicas.</p>
+          {error && <Notice tone="danger">{error}</Notice>}
+          <div>
+            <Button type="submit" variant="primary" fluid>
+              Adicionar atleta
+            </Button>
+          </div>
+        </form>
+      </Group>
       {list.status === 'loading' && <Skeleton />}
       {list.status === 'error' && <ErrorState message={list.message} onRetry={reload} />}
       {list.status === 'ok' &&
         (list.data.length === 0 ? (
-          <EmptyState>
-            {isAdmin ? 'Nenhum atleta ainda. Cadastre o primeiro acima.' : 'Nenhum atleta ainda.'}
-          </EmptyState>
+          <EmptyState>Nenhum atleta ainda. Cadastre o primeiro acima.</EmptyState>
         ) : (
           <ul className="ui-list" aria-label="Atletas">
             {list.data.map((a) => (
-              <AthleteRow key={a.id} athlete={a} editable={isAdmin} onSaved={reload} />
+              <AthleteRow key={a.id} athlete={a} editable onSaved={reload} />
             ))}
           </ul>
         ))}

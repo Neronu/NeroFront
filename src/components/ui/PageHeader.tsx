@@ -10,7 +10,7 @@ export function PageHeader({
   title: ReactNode;
   /** Rótulo acima do título, em label (ex.: esporte e categoria). */
   eyebrow?: ReactNode;
-  /** Linha em small abaixo do título (datas, local). */
+  /** Abaixo do título: texto em small ou um <MetaGrid>. */
   meta?: ReactNode;
   action?: ReactNode;
 }) {
@@ -19,7 +19,7 @@ export function PageHeader({
       <div className="ui-page-header__titles">
         {eyebrow && <span className="t-label ui-page-header__eyebrow">{eyebrow}</span>}
         <h1>{title}</h1>
-        {meta && <span className="ui-page-header__meta">{meta}</span>}
+        {meta && <div className="ui-page-header__meta">{meta}</div>}
       </div>
       {action}
     </header>

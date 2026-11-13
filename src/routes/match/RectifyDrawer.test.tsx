@@ -5,6 +5,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import type { MatchStateResponse } from '../../lib/api/contract';
 import type { TableEvent, TableSnapshot } from '../../lib/match/table';
 import { RectifyDrawer } from './RectifyDrawer';
+import { sportOf } from '../../lib/sports';
 
 const api = vi.hoisted(() => ({ rectify: vi.fn() }));
 vi.mock('../../lib/api/client', async (orig) => ({
@@ -58,6 +59,7 @@ for (let p = 1; p <= 4; p++) {
 }
 const snapshot = {
   server,
+  sport: sportOf('basketball'),
   setup,
   rules,
   confirmed,

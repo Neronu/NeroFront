@@ -1,34 +1,13 @@
-import { periodLabel, type PlayerFoulKind } from '@neronu/sport-basketball';
 import { effectiveEvents } from '@neronu/sport-core';
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button, Notice, Overlay, SelectField, TextAreaField } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import type { RectifyChange } from '../../lib/api/contract';
-import { describeEvent, FOUL_LABEL, type Who } from '../../lib/match/describe';
+import { sportTable, type Who } from '../../lib/match/sport-table';
 import { previewRectification } from '../../lib/match/rectify';
 import { newEventId, type TableEvent, type TableSnapshot } from '../../lib/match/table';
 
 type Side = 'home' | 'away';
-
-/** Ações que dá para incluir numa retificação: pontos e faltas de atleta. */
-const ACTIONS = [
-  { key: 'score:1', label: 'Lance livre (+1)' },
-  { key: 'score:2', label: 'Cesta de 2 (+2)' },
-  { key: 'score:3', label: 'Cesta de 3 (+3)' },
-  ...(Object.keys(FOUL_LABEL) as PlayerFoulKind[]).map((k) => ({
-    key: `foul:${k}`,
-    label: FOUL_LABEL[k],
-  })),
-];
-
-function draftEvent(action: string, athleteId: string) {
-  const [type, value] = action.split(':') as ['score' | 'foul', string];
-  return {
-    id: newEventId(),
-    type,
-    payload: type === 'score' ? { athleteId, points: Number(value) } : { athleteId, kind: value },
-  };
-}
 
 const REASON_MIN = 5;
 const REASON_MAX = 500;
@@ -50,10 +29,12 @@ export function RectifyDrawer({
   onDone(): void;
 }) {
   const { server, setup, rules, confirmed, state } = snapshot;
+  const sport = sportTable(snapshot.sport.key);
+  const actions = sport.rectifyActions;
   const [changes, setChanges] = useState<RectifyChange[]>([]);
   const [anchor, setAnchor] = useState('');
   const [athleteId, setAthleteId] = useState('');
-  const [action, setAction] = useState('score:2');
+  const [action, setAction] = useState(actions[1]!.key);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -66,17 +47,13 @@ export function RectifyDrawer({
         m.set(r.athleteId, { number: r.number, name: r.name, side: s });
     return m;
   }, [server]);
-  const describe = (e: TableEvent) =>
-    describeEvent(
-      e,
-      (id) => who.get(id),
-      teamName,
-      (p) => periodLabel(state, p),
-    );
+  const describe = (e: TableEvent) => sport.describe(e, (id) => who.get(id), teamName, state);
 
   const events = useMemo(() => effectiveEvents(confirmed), [confirmed]);
   const voided = new Set(changes.flatMap((c) => (c.op === 'void' ? [c.targetId] : [])));
-  const preview = changes.length ? previewRectification(setup, rules, confirmed, changes) : null;
+  const preview = changes.length
+    ? previewRectification(snapshot.sport.module, setup, rules, confirmed, changes)
+    : null;
 
   const toggleVoid = (id: string) =>
     setChanges(
@@ -90,7 +67,11 @@ export function RectifyDrawer({
     if (!athleteId) return;
     setChanges([
       ...changes,
-      { op: 'add', afterEventId: anchor || null, event: draftEvent(action, athleteId) },
+      {
+        op: 'add',
+        afterEventId: anchor || null,
+        event: { id: newEventId(), ...actions.find((a) => a.key === action)!.event(athleteId) },
+      },
     ]);
   };
 
@@ -186,7 +167,7 @@ export function RectifyDrawer({
             ))}
           </SelectField>
           <SelectField label="Lance" value={action} onChange={(e) => setAction(e.target.value)}>
-            {ACTIONS.map((a) => (
+            {actions.map((a) => (
               <option key={a.key} value={a.key}>
                 {a.label}
               </option>

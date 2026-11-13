@@ -35,7 +35,8 @@ beforeEach(() => {
 
 it('atleta sem atlética participa com as próprias equipes', async () => {
   session.current = {
-    me: { memberships: [] },
+    me: { organizations: [] },
+    organizations: [],
     personalOrg: { id: 'p1', name: 'Bia', isPersonal: true, isGuest: false },
     refresh: vi.fn(async () => {}),
   };
@@ -47,7 +48,12 @@ it('atleta sem atlética participa com as próprias equipes', async () => {
 });
 
 it('sem atlética nem equipe: indica criar uma equipe', async () => {
-  session.current = { me: { memberships: [] }, personalOrg: null, refresh: vi.fn() };
+  session.current = {
+    me: { organizations: [] },
+    organizations: [],
+    personalOrg: null,
+    refresh: vi.fn(),
+  };
   at();
   expect(await screen.findByRole('link', { name: 'Equipes' })).toHaveAttribute('href', '/equipes');
   expect(screen.queryByRole('button', { name: /Participar/ })).toBeNull();

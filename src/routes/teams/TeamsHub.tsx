@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
   Button,
-  Card,
+  Group,
   EmptyState,
   ErrorState,
   Notice,
@@ -76,7 +76,8 @@ function MyTeams() {
   return (
     <section className="ui-stack" aria-labelledby="my-teams">
       <h2 id="my-teams">Minhas equipes</h2>
-      <Card>
+      <p className="t-small t-muted">Depois de criar, convide os atletas por e-mail.</p>
+      <Group>
         <form onSubmit={create} className="ui-form">
           <div className="ui-form-row">
             <TextField
@@ -109,20 +110,14 @@ function MyTeams() {
             />
             Também jogo nesta equipe
           </label>
-          <p className="t-small t-muted">
-            Depois de criar, convide os atletas por e-mail. A equipe pode se inscrever em
-            campeonatos pelo link de convite da organizadora.
-          </p>
           {error && <Notice tone="danger">{error}</Notice>}
         </form>
-      </Card>
+      </Group>
       {teams.status === 'loading' && <Skeleton />}
       {teams.status === 'error' && <ErrorState message={teams.message} onRetry={reload} />}
       {teams.status === 'ok' &&
         (mine.length === 0 ? (
-          <EmptyState>
-            Você ainda não está em nenhuma equipe. Crie a sua ou aceite um convite.
-          </EmptyState>
+          <EmptyState>Você ainda não está em nenhuma equipe.</EmptyState>
         ) : (
           <ul className="ui-list" aria-label="Minhas equipes">
             {mine.map((t) => (

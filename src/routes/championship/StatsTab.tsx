@@ -19,7 +19,7 @@ export function AthleteName({ row }: { row: Pick<LeaderboardRow, 'athleteId' | '
 
 /**
  * Aba Estatísticas: conteúdo em 8 colunas e lateral em 4 a partir de bp-lg.
- * A lateral é o único lugar com destaque (gold): cestinha e campeão.
+ * A lateral é o único lugar com destaque (court, o azul do sistema): cestinha e campeão.
  */
 export function StatsTab({ id }: { id: string }) {
   const [data, reload] = useAsync(() => load(id), id);
@@ -33,13 +33,13 @@ export function StatsTab({ id }: { id: string }) {
       {hasHighlights && (
         <aside className="lyt-span-4 ch-stats__aside ui-stack" aria-label="Destaques">
           {champion && (
-            <div className="ch-merit">
+            <div className="ch-merit on-court">
               <span className="t-label">Campeão</span>
               <span className="ch-merit__name">{champion.teamName}</span>
             </div>
           )}
           {top && (
-            <div className="ch-merit">
+            <div className="ch-merit on-court">
               <span className="t-label">Cestinha</span>
               <span className="ch-merit__name">
                 <AthleteName row={top} />

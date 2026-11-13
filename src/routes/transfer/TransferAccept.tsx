@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
   Button,
-  Card,
+  Group,
   ErrorState,
   Notice,
   PageHeader,
@@ -76,7 +76,7 @@ export function TransferAccept() {
   return (
     <div className="ui-stack">
       <PageHeader eyebrow="Transferência de equipe" title={team.name} />
-      <Card className="ui-stack">
+      <Group className="ui-stack">
         <p>
           A <strong>{from.name}</strong> cadastrou esta equipe como convidada. Ao aceitar, ela passa
           para a sua entidade com as súmulas e estatísticas já registradas.
@@ -151,7 +151,7 @@ export function TransferAccept() {
             </Button>
           </>
         )}
-      </Card>
+      </Group>
     </div>
   );
 }

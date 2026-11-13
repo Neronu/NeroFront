@@ -1,15 +1,16 @@
-import { totalFouls, type PlayerState, type Points } from '@neronu/sport-basketball';
+import type { ScoreButton, TablePlayer } from '../../../lib/match/sport-table';
 
 type Side = 'home' | 'away';
 
 /**
  * Metade do quadro de uma equipe: cada linha traz número, nome, pontos e faltas em stat,
- * e os botões +1, +2, +3 e Falta sempre à mostra. Rótulo em texto, nunca só ícone.
+ * e os botões de cesta do esporte e Falta sempre à mostra. Rótulo em texto, nunca só ícone.
  */
 export function TeamColumn({
   side,
   teamName,
   players,
+  scoreButtons,
   nameOf,
   disabled,
   onScore,
@@ -17,11 +18,12 @@ export function TeamColumn({
 }: {
   side: Side;
   teamName: string;
-  players: PlayerState[];
+  players: TablePlayer[];
+  scoreButtons: readonly ScoreButton[];
   nameOf: (athleteId: string) => string;
   disabled: boolean;
-  onScore: (player: PlayerState, points: Points) => void;
-  onFoul: (player: PlayerState) => void;
+  onScore: (player: TablePlayer, button: ScoreButton) => void;
+  onFoul: (player: TablePlayer) => void;
 }) {
   return (
     <section className={`sm-team sm-team--${side}`} aria-label={`Atletas · ${teamName}`}>
@@ -55,20 +57,20 @@ export function TeamColumn({
               <span className="sm-row__stat" aria-label={`${p.points} pontos`}>
                 {p.points}
               </span>
-              <span className="sm-row__stat" aria-label={`${totalFouls(p)} faltas`}>
-                {totalFouls(p)}
+              <span className="sm-row__stat" aria-label={`${p.fouls} faltas`}>
+                {p.fouls}
               </span>
               <span className="sm-row__actions">
-                {([1, 2, 3] as const).map((pts) => (
+                {scoreButtons.map((b) => (
                   <button
-                    key={pts}
+                    key={b.key}
                     type="button"
                     className="sm-btn sm-btn--score"
                     disabled={off}
-                    aria-label={`+${pts} para o ${who}`}
-                    onClick={() => onScore(p, pts)}
+                    aria-label={`${b.aria} para o ${who}`}
+                    onClick={() => onScore(p, b)}
                   >
-                    +{pts}
+                    {b.label}
                   </button>
                 ))}
                 <button

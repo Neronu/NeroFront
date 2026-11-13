@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router';
 import {
   Button,
-  Card,
+  Group,
   EmptyState,
   ErrorState,
   Icon,
@@ -17,6 +17,7 @@ import {
 import { api, errorMessage } from '../../lib/api/client';
 import { useSession } from '../../lib/session';
 import { useAsync } from '../../lib/useAsync';
+import { useCopy } from '../../lib/useCopy';
 import { PublicationConsentCheck } from '../org/PublicationConsent';
 
 /** Situação da inscrição: positivo e perigo sempre com palavra e ícone, nunca só cor. */
@@ -136,7 +137,7 @@ function RegisterTeam({ ch, onDone }: { ch: ChampionshipDetail; onDone: () => vo
   };
 
   return (
-    <Card>
+    <Group>
       <form onSubmit={submit} className="ui-form">
         <h3>Inscrever equipe</h3>
         <div className="ui-form-row">
@@ -169,19 +170,15 @@ function RegisterTeam({ ch, onDone }: { ch: ChampionshipDetail; onDone: () => vo
         </div>
         {msg && <Notice tone={msg.ok ? 'positive' : 'danger'}>{msg.text}</Notice>}
       </form>
-    </Card>
+    </Group>
   );
 }
 
 function Invites({ ch, onChange }: { ch: ChampionshipDetail; onChange: () => void }) {
   const [invites, reload] = useAsync(() => api.invites(ch.id), ch.id);
-  const [copied, setCopied] = useState('');
+  const { copied, copy: copyText } = useCopy();
   const url = (path: string) => `${window.location.origin}${path}`;
-  const copy = (token: string, path: string) =>
-    navigator.clipboard?.writeText(url(path)).then(
-      () => setCopied(token),
-      () => {},
-    );
+  const copy = (token: string, path: string) => copyText(url(path), token);
 
   const create = async () => {
     const inv = await api.createInvite(ch.id);
@@ -281,7 +278,7 @@ function GuestTeam({ ch, onDone }: { ch: ChampionshipDetail; onDone: () => void 
   };
 
   return (
-    <Card>
+    <Group>
       <form onSubmit={submit} className="ui-form">
         <h3>Equipe convidada sem conta</h3>
         <div className="ui-form-row">
@@ -315,7 +312,7 @@ function GuestTeam({ ch, onDone }: { ch: ChampionshipDetail; onDone: () => void 
           </Button>
         </div>
       </form>
-    </Card>
+    </Group>
   );
 }
 
@@ -325,7 +322,7 @@ function GuestTeam({ ch, onDone }: { ch: ChampionshipDetail; onDone: () => void 
  */
 function TransferLink({ teamId }: { teamId: string }) {
   const [link, setLink] = useState('');
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopy();
   const [error, setError] = useState('');
 
   const create = async () => {
@@ -334,10 +331,7 @@ function TransferLink({ teamId }: { teamId: string }) {
       const t = await api.createTransfer(teamId);
       const url = `${window.location.origin}${t.path}`;
       setLink(url);
-      await navigator.clipboard?.writeText(url).then(
-        () => setCopied(true),
-        () => {},
-      );
+      await copy(url);
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -348,17 +342,9 @@ function TransferLink({ teamId }: { teamId: string }) {
       {link ? (
         <div className="ui-form-row">
           <code className="ui-list__main ch-invite-url">{link}</code>
-          <Button
-            variant="quiet"
-            onClick={() =>
-              navigator.clipboard?.writeText(link).then(
-                () => setCopied(true),
-                () => {},
-              )
-            }
-          >
+          <Button variant="quiet" onClick={() => void copy(link)}>
             <Icon icon={Copy} />
-            {copied ? 'Copiado' : 'Copiar'}
+            {copied === link ? 'Copiado' : 'Copiar'}
           </Button>
         </div>
       ) : (

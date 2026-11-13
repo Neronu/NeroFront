@@ -1,4 +1,4 @@
-import type { AuthResponse, MeResponse, MemberRole, Organization } from './api/contract';
+import type { AuthResponse, MeResponse, Organization } from './api/contract';
 import {
   createContext,
   useCallback,
@@ -18,9 +18,10 @@ export interface Session {
   /** `loading` só na primeira carga com token salvo. */
   status: 'loading' | 'anonymous' | 'authenticated';
   me: MeResponse | null;
-  /** Entidade em uso no painel. */
+  /** Atlética em uso no painel: quem está nela age como a atlética (não há papéis). */
   org: Organization | null;
-  role: MemberRole | null;
+  /** Atléticas da conta (o e-mail da atlética é o da conta). */
+  organizations: Organization[];
   /** Admin da plataforma (cria atléticas, consulta tudo). Todo usuário é também atleta. */
   isSystemAdmin: boolean;
   /** Entidade pessoal (equipes do atleta); null antes da primeira equipe. */
@@ -87,13 +88,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<Session>(() => {
-    const memberships = me?.memberships ?? [];
-    const current = memberships.find((m) => m.organization.id === orgId) ?? memberships[0] ?? null;
+    // `?? []`: /me em cache de antes do campo existir.
+    const organizations = me?.organizations ?? [];
+    const current = organizations.find((o) => o.id === orgId) ?? organizations[0] ?? null;
     return {
       status,
       me,
-      org: current?.organization ?? null,
-      role: current?.role ?? null,
+      org: current,
+      organizations,
       // `?? false`: /me em cache de antes do campo existir.
       isSystemAdmin: me?.isSystemAdmin ?? false,
       personalOrg: me?.personalOrganization ?? null,
@@ -114,8 +116,8 @@ export function useSession(): Session {
 }
 
 /** Entidade atual; só use dentro de rotas que exigem uma (RequireOrg). */
-export function useOrg(): { org: Organization; role: MemberRole; isAdmin: boolean } {
-  const { org, role } = useSession();
-  if (!org || !role) throw new Error('useOrg sem entidade');
-  return { org, role, isAdmin: role === 'admin' };
+export function useOrg(): { org: Organization } {
+  const { org } = useSession();
+  if (!org) throw new Error('useOrg sem entidade');
+  return { org };
 }

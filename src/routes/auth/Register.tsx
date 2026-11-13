@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { Button, Card, Notice, PageHeader, TextField } from '../../components/ui';
+import { Button, Group, Notice, PageHeader, TextField } from '../../components/ui';
 import { api, errorMessage, HttpError } from '../../lib/api/client';
 import { useSession } from '../../lib/session';
 
@@ -38,7 +38,7 @@ export function Register() {
     return (
       <div className="ui-stack">
         <PageHeader title="Confirme seu e-mail" />
-        <Card className="ui-stack">
+        <Group className="ui-stack">
           <p>
             Enviamos um link para <strong>{email}</strong>. Abra-o para ativar a conta; ele vale por
             48 horas.
@@ -52,7 +52,7 @@ export function Register() {
               Reenviar o link
             </Button>
           </div>
-        </Card>
+        </Group>
       </div>
     );
   }
@@ -63,7 +63,7 @@ export function Register() {
         title="Criar conta"
         meta="Toda conta é de atleta: acompanhe seus campeonatos e estatísticas. Se você foi convidado(a) por uma atlética, use o e-mail do convite."
       />
-      <Card>
+      <Group>
         <form onSubmit={submit} className="ui-form">
           <TextField
             label="Nome"
@@ -98,7 +98,7 @@ export function Register() {
             Já tem conta? <Link to="/entrar">Entre</Link>
           </p>
         </form>
-      </Card>
+      </Group>
     </div>
   );
 }

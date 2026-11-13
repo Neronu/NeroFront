@@ -1,16 +1,24 @@
 import type { MatchStateResponse, PostEventRequest, StoredEvent } from '../api/contract';
+import type { BasketballEvent, BasketballState } from '@neronu/sport-basketball';
+import type { Basketball3x3Event, Basketball3x3State } from '@neronu/sport-basketball-3x3';
 import {
-  basketball,
-  type BasketballEvent,
-  type BasketballRules,
-  type BasketballState,
-} from '@neronu/sport-basketball';
-import { computeState, validateNext, type MatchSetup, type VoidEvent } from '@neronu/sport-core';
+  computeState,
+  isVoidEvent,
+  validateNext,
+  type MatchSetup,
+  type RuleSet,
+  type VoidEvent,
+} from '@neronu/sport-core';
 import { api as defaultApi, HttpError, NetworkError } from '../api/client';
 import { store as defaultStore } from '../storage';
+import { sportOf, type SportOption } from '../sports';
 
-export type TableEvent = BasketballEvent | VoidEvent;
-export type Draft = Omit<BasketballEvent, 'id'> | Omit<VoidEvent, 'id'>;
+/** Eventos dos esportes que a mesa conhece. O `sportKey` da partida diz qual vale. */
+export type SportEvent = BasketballEvent | Basketball3x3Event;
+/** Estado calculado pelo módulo do esporte da partida. */
+export type SportState = BasketballState | Basketball3x3State;
+export type TableEvent = SportEvent | VoidEvent;
+export type Draft = Omit<SportEvent, 'id'> | Omit<VoidEvent, 'id'>;
 
 export type SyncStatus =
   /** Tudo enviado. */
@@ -31,14 +39,16 @@ export interface Rejection {
 export interface TableSnapshot {
   /** Dados da partida vindos da API (cacheados para abrir sem rede). */
   server: MatchStateResponse;
+  /** Esporte da partida (`server.match.sportKey`), com o módulo que valida e calcula. */
+  sport: SportOption;
   setup: MatchSetup;
-  rules: BasketballRules;
+  rules: RuleSet;
   /** Eventos já gravados na API, em ordem de sequência. */
   confirmed: TableEvent[];
   /** Eventos registrados na mesa e ainda não confirmados, na ordem do toque. */
   pending: TableEvent[];
   /** Estado calculado com confirmados + pendentes: é o que a tela mostra. */
-  state: BasketballState;
+  state: SportState;
   sync: SyncStatus;
   /** Eventos que a API recusou depois de aplicados na mesa (raro: só se a mesa divergir). */
   rejections: Rejection[];
@@ -167,10 +177,13 @@ export class MatchTable {
     const pending = (this.deps.store.get<TableEvent[]>(this.keys.pending) ?? []).filter(
       (e) => !known.has(e.id),
     );
+    const sport = sportOf(server.match.sportKey);
+    const parsed = sport.module.parseRules(server.match.rules);
     this.set({
       server,
+      sport,
       setup: setupFrom(server),
-      rules: server.match.rules as BasketballRules,
+      rules: parsed.ok ? parsed.rules : (server.match.rules as RuleSet),
       confirmed,
       pending,
       rejections: this.snapshot?.rejections ?? [],
@@ -181,10 +194,10 @@ export class MatchTable {
   }
 
   private set(next: Omit<TableSnapshot, 'state'>): void {
-    const state = computeState(basketball, next.setup, next.rules, [
+    const state = computeState(next.sport.module, next.setup, next.rules, [
       ...next.confirmed,
       ...next.pending,
-    ]);
+    ]) as SportState;
     this.snapshot = { ...next, state };
     this.deps.store.set(this.keys.pending, next.pending);
     this.emit();
@@ -218,7 +231,12 @@ export class MatchTable {
       id: this.deps.newId(),
       recordedAt: this.deps.now().toISOString(),
     } as TableEvent;
-    const check = validateNext(basketball, snap.setup, snap.rules, this.events, event);
+    // Mesmo filtro de formato que a API aplica antes de validar a regra do jogo.
+    if (!isVoidEvent(event)) {
+      const parsed = snap.sport.module.parseEvent(event);
+      if (!parsed.ok) return { ok: false, code: 'invalid_event', message: parsed.message };
+    }
+    const check = validateNext(snap.sport.module, snap.setup, snap.rules, this.events, event);
     if (!check.ok) return { ok: false, code: check.code, message: check.message };
     this.patch({ pending: [...snap.pending, event], sync: 'sending' });
     void this.flush();
@@ -289,7 +307,7 @@ export class MatchTable {
     for (const e of snap.pending) {
       if (e.id === event.id) continue;
       const check = validateNext(
-        basketball,
+        snap.sport.module,
         snap.setup,
         snap.rules,
         [...snap.confirmed, ...kept],

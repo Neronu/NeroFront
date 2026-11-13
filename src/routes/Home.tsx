@@ -1,49 +1,26 @@
-import type { Match } from '../lib/api/contract';
-import type { ReactNode } from 'react';
-import { Link } from 'react-router';
-import {
-  Badge,
-  Button,
-  DataTable,
-  EmptyState,
-  ErrorState,
-  LiveBadge,
-  Skeleton,
-} from '../components/ui';
-import { ChampionshipCards } from '../components/ChampionshipCards';
+import { Button, EmptyState, ErrorState, Skeleton } from '../components/ui';
+import { ChampionshipList } from '../components/ChampionshipList';
+import { MatchList } from '../components/MatchList';
 import { ChampionshipCodeSearch } from '../components/ChampionshipCodeSearch';
 import { TeamInvitesPanel } from '../components/TeamInvitesPanel';
 import { api } from '../lib/api/client';
 import { useSession } from '../lib/session';
 import { useAsync } from '../lib/useAsync';
 
-const STATUS: Record<Match['status'], ReactNode> = {
-  scheduled: <Badge>Preparação</Badge>,
-  in_progress: <LiveBadge />,
-  closed: <Badge tone="closed">Súmula fechada</Badge>,
-};
-
-export function matchLink(m: Pick<Match, 'id' | 'status'>): string {
-  if (m.status === 'scheduled') return `/partidas/${m.id}/preparar`;
-  if (m.status === 'closed') return `/partidas/${m.id}/conferencia`;
-  return `/partidas/${m.id}/mesa`;
-}
-
 /**
- * Home logada: código do campeonato no topo, convites de equipe pendentes, o que está em
- * andamento agora e, para a atlética, as partidas avulsas. A lista completa fica em Campeonatos.
+ * Home logada, numa coluna central: código do campeonato no topo, logo abaixo o que está em
+ * andamento agora, depois convites de equipe pendentes e, para a atlética, as próximas partidas
+ * avulsas. As listas completas ficam em Campeonatos e Partidas.
  */
 export function Home() {
-  const { org, role } = useSession();
-  const isAdmin = role === 'admin';
+  const { org } = useSession();
   const [mine, reloadMine] = useAsync(() => api.myChampionships(), 'mine');
   const now = mine.status === 'ok' ? mine.data.filter((c) => c.live || c.status === 'running') : [];
 
   return (
-    <div className="ui-stack ui-stack--section">
+    <div className="home-dash ui-stack ui-stack--section">
       <h1 className="sr-only">Início</h1>
       <ChampionshipCodeSearch label="Buscar campeonato pelo código" hideLabel />
-      <TeamInvitesPanel />
 
       <section className="ui-stack" aria-labelledby="home-champs">
         <div className="ui-section-head">
@@ -57,64 +34,42 @@ export function Home() {
         {mine.status === 'ok' &&
           (now.length === 0 ? (
             <EmptyState>
-              {org && isAdmin
+              {org
                 ? 'Nenhum campeonato em andamento. Crie um em Campeonatos ou entre em um pelo código.'
                 : 'Nenhum campeonato em andamento. Quando sua equipe for inscrita, ele aparece aqui.'}
             </EmptyState>
           ) : (
-            <ChampionshipCards items={now} label="Campeonatos em andamento" />
+            <ChampionshipList items={now} label="Campeonatos em andamento" />
           ))}
       </section>
 
-      {org && <SingleMatches orgId={org.id} isAdmin={isAdmin} />}
+      <TeamInvitesPanel />
+      {org && <SingleMatches orgId={org.id} />}
     </div>
   );
 }
 
-/** Partidas avulsas da atlética (amistosos e treinos). */
-function SingleMatches({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) {
-  const [matches, reloadMatches] = useAsync(() => api.matches(orgId), orgId);
+/** Próximas partidas avulsas da atlética; a lista completa (e criar/excluir) fica em Partidas. */
+function SingleMatches({ orgId }: { orgId: string }) {
+  const [matches, reloadMatches] = useAsync(() => api.matches(orgId, 3), `next-${orgId}`);
   return (
-    <>
-      <section className="ui-stack" aria-labelledby="home-matches">
-        <div className="ui-section-head">
-          <h2 id="home-matches">Partidas avulsas</h2>
-          {isAdmin && (
-            <Button to="/partidas/nova" variant="secondary">
-              Nova partida
-            </Button>
-          )}
-        </div>
-        {matches.status === 'loading' && <Skeleton />}
-        {matches.status === 'error' && (
-          <ErrorState message={matches.message} onRetry={reloadMatches} />
-        )}
-        {matches.status === 'ok' &&
-          (matches.data.length === 0 ? (
-            <EmptyState>
-              Nenhuma partida avulsa. Crie uma para anotar um amistoso ou treino.
-            </EmptyState>
-          ) : (
-            <DataTable
-              caption="Partidas avulsas"
-              rows={matches.data}
-              rowKey={(m) => m.id}
-              columns={[
-                {
-                  key: 'teams',
-                  header: 'Partida',
-                  lead: true,
-                  render: (m) => (
-                    <Link to={matchLink(m)}>
-                      {m.homeTeam.name} × {m.awayTeam.name}
-                    </Link>
-                  ),
-                },
-                { key: 'status', header: 'Situação', render: (m) => STATUS[m.status] },
-              ]}
-            />
-          ))}
-      </section>
-    </>
+    <section className="ui-stack" aria-labelledby="home-matches">
+      <div className="ui-section-head">
+        <h2 id="home-matches">Partidas avulsas</h2>
+        <Button to="/partidas" variant="quiet">
+          Ver todas as partidas
+        </Button>
+      </div>
+      {matches.status === 'loading' && <Skeleton />}
+      {matches.status === 'error' && (
+        <ErrorState message={matches.message} onRetry={reloadMatches} />
+      )}
+      {matches.status === 'ok' &&
+        (matches.data.length === 0 ? (
+          <EmptyState>Nenhuma partida avulsa marcada.</EmptyState>
+        ) : (
+          <MatchList items={matches.data} label="Próximas partidas avulsas" />
+        ))}
+    </section>
   );
 }

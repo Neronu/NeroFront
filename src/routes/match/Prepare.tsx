@@ -1,9 +1,9 @@
 import type { Match, MatchCandidates, MatchRoster, TeamSide } from '../../lib/api/contract';
-import { STARTERS } from '@neronu/sport-basketball';
 import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
-import { Button, Card, ErrorState, Notice, PageHeader, Skeleton } from '../../components/ui';
+import { Button, Group, ErrorState, Notice, PageHeader, Skeleton } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
+import { sportOf } from '../../lib/sports';
 import { useAsync } from '../../lib/useAsync';
 
 interface Pick {
@@ -24,15 +24,23 @@ async function load(id: string): Promise<Loaded> {
   return { match: s.match, roster: s.roster, candidates };
 }
 
+/** Máximo de relacionados pelas regras da partida (sem limite se a regra não existir). */
+function rosterMax(match: Match): number {
+  const max = (match.rules as Record<string, unknown>)['rosterMax'];
+  return typeof max === 'number' ? max : Infinity;
+}
+
 function initialPicks(data: Loaded, side: TeamSide): Picks {
   const saved = new Map(data.roster[side].roster.map((r) => [r.athleteId, r]));
+  const max = rosterMax(data.match);
   return Object.fromEntries(
-    data.candidates[side].map((p) => {
+    data.candidates[side].map((p, i) => {
       const s = saved.get(p.athleteId);
       return [
         p.athleteId,
         {
-          selected: saved.size ? !!s : true,
+          // Sem escalação salva, já vêm marcados os primeiros do elenco, até o máximo da regra.
+          selected: saved.size ? !!s : i < max,
           number: String(s?.number ?? p.number ?? ''),
           isStarter: s?.isStarter ?? false,
         },
@@ -65,6 +73,7 @@ function PrepareForm({ id, data }: { id: string; data: Loaded }) {
   const teamName = (side: TeamSide) => (side === 'home' ? match.homeTeam : match.awayTeam).name;
   // No campeonato, o número é o do elenco inscrito e não muda aqui.
   const fixedNumbers = match.championshipId !== null;
+  const { starters: STARTERS } = sportOf(match.sportKey);
 
   const update = (side: TeamSide, athleteId: string, change: Partial<Pick>) =>
     setPicks((p) => ({
@@ -113,9 +122,9 @@ function PrepareForm({ id, data }: { id: string; data: Loaded }) {
                 </Notice>
               </div>
               {candidates[side].length === 0 ? (
-                <Card>
+                <Group>
                   <Notice>Nenhum atleta disponível. Cadastre a equipe ou o elenco inscrito.</Notice>
-                </Card>
+                </Group>
               ) : (
                 <ul className="ui-list">
                   {candidates[side].map((p) => {

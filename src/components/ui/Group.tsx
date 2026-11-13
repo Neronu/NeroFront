@@ -1,7 +1,10 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 
-/** Superfície (surface sobre bg): separa por cor de fundo, nunca por sombra ou borda. */
-export function Card({
+/**
+ * Bloco de conteúdo em lista contínua: separa por linha fina (line) e espaço, nunca por caixa,
+ * fundo ou sombra. Fica direto sobre bg, alinhado ao texto da página.
+ */
+export function Group({
   flush,
   as: Tag = 'section',
   className,
@@ -14,7 +17,7 @@ export function Card({
 } & HTMLAttributes<HTMLElement>) {
   return (
     <Tag
-      className={['ui-card', flush && 'ui-card--flush', className].filter(Boolean).join(' ')}
+      className={['ui-group', flush && 'ui-group--flush', className].filter(Boolean).join(' ')}
       {...rest}
     >
       {children}

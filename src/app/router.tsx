@@ -118,6 +118,7 @@ export const router = createBrowserRouter([
                     ...page(() => import('../routes/org/Settings'), 'Settings'),
                   },
                   { path: 'membros', element: <Navigate to="/configuracoes" replace /> },
+                  { path: 'partidas', ...page(() => import('../routes/match/Matches'), 'Matches') },
                   {
                     path: 'partidas/nova',
                     ...page(() => import('../routes/match/NewMatch'), 'NewMatch'),
@@ -139,6 +140,10 @@ export const router = createBrowserRouter([
               {
                 path: 'convites/:token',
                 ...page(() => import('../routes/championship/InviteAccept'), 'InviteAccept'),
+              },
+              {
+                path: 'equipes/convite/:token',
+                ...page(() => import('../routes/teams/TeamJoin'), 'TeamJoin'),
               },
               {
                 path: 'transferencias/:token',

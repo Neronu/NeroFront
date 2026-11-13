@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeamDetailPage } from './TeamDetailPage';
+import { TeamJoin } from './TeamJoin';
 import { TeamsHub } from './TeamsHub';
 
 const api = vi.hoisted(() => ({
@@ -11,6 +12,10 @@ const api = vi.hoisted(() => ({
   teamInvites: vi.fn(async () => []),
   inviteToTeam: vi.fn(),
   orgAthletes: vi.fn(async () => []),
+  teamInviteLink: vi.fn(async () => ({ token: 'tok', path: '/equipes/convite/tok' })),
+  resetTeamInviteLink: vi.fn(),
+  teamLink: vi.fn(),
+  joinTeamByLink: vi.fn(),
 }));
 vi.mock('../../lib/api/client', async (orig) => ({
   ...(await orig<typeof import('../../lib/api/client')>()),
@@ -42,7 +47,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   session.current = {
     org: null,
-    me: { memberships: [] },
+    me: { organizations: [] },
+    organizations: [],
     personalOrg: personal,
     refresh: vi.fn(async () => {}),
   };
@@ -144,5 +150,63 @@ describe('detalhe da equipe', () => {
     expect(within(list).getByText('Bia')).toBeInTheDocument();
     expect(screen.queryByRole('button')).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Convidar atletas' })).toBeNull();
+  });
+});
+
+describe('Link de convite da equipe', () => {
+  it('dono copia o link fixo da equipe', async () => {
+    const writeText = vi.fn(async () => {});
+    Object.assign(navigator, { clipboard: { writeText } });
+    api.team.mockResolvedValue(team('p1'));
+    render(
+      <MemoryRouter initialEntries={['/equipes/t1']}>
+        <Routes>
+          <Route path="/equipes/:id" element={<TeamDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    const url = `${window.location.origin}/equipes/convite/tok`;
+    expect(await screen.findByText(url)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar link' }));
+    expect(await screen.findByRole('button', { name: 'Copiado' })).toBeInTheDocument();
+    expect(writeText).toHaveBeenCalledWith(url);
+  });
+
+  const renderJoin = () =>
+    render(
+      <MemoryRouter initialEntries={['/equipes/convite/tok']}>
+        <Routes>
+          <Route path="/equipes/convite/:token" element={<TeamJoin />} />
+          <Route path="/equipes/:id" element={<p>detalhe da equipe</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+  it('quem abre o link entra na equipe com o número', async () => {
+    api.teamLink.mockResolvedValue({
+      team: { id: 't1', name: 'Os Brabos' },
+      organization: personal,
+      alreadyMember: false,
+    });
+    api.joinTeamByLink.mockResolvedValue({ team: { id: 't1' } });
+    renderJoin();
+    expect(await screen.findByRole('heading', { name: 'Os Brabos' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Número da camisa (opcional)'), {
+      target: { value: '7' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar na equipe' }));
+    expect(await screen.findByText('detalhe da equipe')).toBeInTheDocument();
+    expect(api.joinTeamByLink).toHaveBeenCalledWith('tok', { number: 7 });
+  });
+
+  it('quem já joga vê o aviso em vez do botão', async () => {
+    api.teamLink.mockResolvedValue({
+      team: { id: 't1', name: 'Os Brabos' },
+      organization: personal,
+      alreadyMember: true,
+    });
+    renderJoin();
+    expect(await screen.findByText(/Você já joga nesta equipe/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Entrar na equipe' })).toBeNull();
   });
 });

@@ -10,10 +10,10 @@ vi.mock('../../lib/session', () => ({
     status: 'authenticated',
     me: {
       user: { id: 'u1', name: 'Ana', email: 'ana@exemplo.com' },
-      memberships: [{ organization: { id: 'o1', name: 'Atlética Computação' }, role: 'admin' }],
+      organizations: [{ id: 'o1', name: 'Atlética Computação' }],
     },
     org: { id: 'o1', name: 'Atlética Computação' },
-    role: 'admin',
+    organizations: [{ id: 'o1', name: 'Atlética Computação' }],
     selectOrg: vi.fn(),
     signOut: vi.fn(),
   }),
@@ -35,7 +35,7 @@ it('mostra o menu da atlética, marca a seção ativa e abre a gaveta pelo botã
     expect(within(sidebar).getByRole('link', { name: label })).toBeInTheDocument();
   // Extras só da atlética, num grupo com o nome dela.
   const athletic = within(sidebar).getByRole('list', { name: 'Atlética Computação' });
-  for (const label of ['Atletas', 'Módulos de esporte', 'Configurações'])
+  for (const label of ['Partidas', 'Atletas', 'Módulos de esporte', 'Configurações'])
     expect(within(athletic).getByRole('link', { name: label })).toBeInTheDocument();
   // Atlética é cadastrada pelo admin da plataforma; sem grupo Administração para os demais.
   expect(within(sidebar).queryByRole('link', { name: /Nova entidade/ })).toBeNull();
@@ -45,10 +45,10 @@ it('mostra o menu da atlética, marca a seção ativa e abre a gaveta pelo botã
     'page',
   );
 
-  const menu = screen.getByRole('button', { name: 'Menu' });
+  const menu = screen.getByRole('button', { name: 'Abrir menu' });
   expect(menu).toHaveAttribute('aria-expanded', 'false');
   fireEvent.click(menu);
-  const drawer = screen.getByRole('dialog', { name: 'Menu' });
+  const drawer = screen.getByRole('dialog', { name: 'Neronu' });
   expect(within(drawer).getByRole('link', { name: 'Atletas' })).toBeInTheDocument();
   fireEvent.keyDown(document, { key: 'Escape' });
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

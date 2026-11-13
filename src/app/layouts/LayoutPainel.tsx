@@ -8,7 +8,7 @@ import { navFor } from './nav';
 
 /**
  * Painel da atlética (seção 10): barra lateral fixa de sidebar-w a partir de bp-lg;
- * abaixo disso, gaveta aberta pelo botão "Menu" na barra superior.
+ * abaixo disso, gaveta aberta pelo botão de 3 barras na barra superior.
  */
 export function LayoutPainel({ children }: { children?: ReactNode }) {
   const session = useSession();
@@ -31,11 +31,11 @@ export function LayoutPainel({ children }: { children?: ReactNode }) {
           <Button
             variant="quiet"
             className="lyt-painel__menu-button"
+            aria-label="Abrir menu"
             aria-expanded={drawer}
             onClick={() => setDrawer(true)}
           >
             <Icon icon={Menu} />
-            Menu
           </Button>
           <span className="lyt-painel__topbar-wordmark">
             <Wordmark />
@@ -46,7 +46,13 @@ export function LayoutPainel({ children }: { children?: ReactNode }) {
         </header>
         <main className="lyt-content">{children ?? <Outlet />}</main>
       </div>
-      <Overlay open={drawer} onClose={() => setDrawer(false)} title="Menu" kind="drawer">
+      <Overlay
+        open={drawer}
+        onClose={() => setDrawer(false)}
+        title="Neronu"
+        titleClassName="ui-wordmark"
+        kind="drawer"
+      >
         <PainelNav inDrawer />
       </Overlay>
     </div>
@@ -56,7 +62,7 @@ export function LayoutPainel({ children }: { children?: ReactNode }) {
 function PainelNav({ inDrawer }: { inDrawer?: boolean }) {
   const session = useSession();
   const navigate = useNavigate();
-  const memberships = session.me?.memberships ?? [];
+  const organizations = session.organizations;
   return (
     <nav className="lyt-nav" aria-label="Seções do painel">
       {!inDrawer && (
@@ -80,7 +86,7 @@ function PainelNav({ inDrawer }: { inDrawer?: boolean }) {
         </div>
       ))}
       <div className="lyt-nav__footer">
-        {memberships.length > 0 && (
+        {organizations.length > 0 && (
           <SelectField
             label="Atlética"
             value={session.org?.id ?? ''}
@@ -89,9 +95,9 @@ function PainelNav({ inDrawer }: { inDrawer?: boolean }) {
               navigate('/');
             }}
           >
-            {memberships.map((m) => (
-              <option key={m.organization.id} value={m.organization.id}>
-                {m.organization.name}
+            {organizations.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
               </option>
             ))}
           </SelectField>

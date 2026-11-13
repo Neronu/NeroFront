@@ -7,7 +7,7 @@ import { Icon } from './Icon';
  * Sem escolha salva, o app abre no tema do aparelho; o primeiro clique salva a escolha.
  * É um interruptor "Tema escuro": ligado = escuro.
  */
-export function ThemeToggle({ compact }: { compact?: boolean }) {
+export function ThemeToggle({ compact, block }: { compact?: boolean; block?: boolean }) {
   const { resolved, setChoice } = useTheme();
   const dark = resolved === 'dark';
   return (
@@ -15,7 +15,13 @@ export function ThemeToggle({ compact }: { compact?: boolean }) {
       type="button"
       role="switch"
       aria-checked={dark}
-      className={['ui-button', 'ui-button--quiet', 'ui-theme-toggle', compact && 'is-compact']
+      className={[
+        'ui-button',
+        'ui-button--quiet',
+        'ui-theme-toggle',
+        compact && 'is-compact',
+        block && 'ui-theme-toggle--row',
+      ]
         .filter(Boolean)
         .join(' ')}
       onClick={() => setChoice(dark ? 'light' : 'dark')}

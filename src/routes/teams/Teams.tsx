@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
   Button,
-  Card,
+  Group,
   EmptyState,
   ErrorState,
   Notice,
@@ -15,7 +15,7 @@ import { useAsync } from '../../lib/useAsync';
 
 /** Equipes da atlética selecionada; o admin cria e monta os elencos. */
 export function OrgTeams() {
-  const { org, isAdmin } = useOrg();
+  const { org } = useOrg();
   const [teams, reload] = useAsync(() => api.teams(org.id), org.id);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
@@ -34,34 +34,28 @@ export function OrgTeams() {
   return (
     <section className="ui-stack" aria-labelledby="org-teams">
       <h2 id="org-teams">Equipes da {org.name}</h2>
-      {isAdmin && (
-        <Card>
-          <form onSubmit={create} className="ui-form">
-            <div className="ui-form-row">
-              <TextField
-                label="Nome da equipe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Basquete masculino"
-                required
-              />
-              <Button type="submit" variant="primary">
-                Criar equipe
-              </Button>
-            </div>
-            {error && <Notice tone="danger">{error}</Notice>}
-          </form>
-        </Card>
-      )}
+      <Group>
+        <form onSubmit={create} className="ui-form">
+          <div className="ui-form-row">
+            <TextField
+              label="Nome da equipe"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Basquete masculino"
+              required
+            />
+            <Button type="submit" variant="primary">
+              Criar equipe
+            </Button>
+          </div>
+          {error && <Notice tone="danger">{error}</Notice>}
+        </form>
+      </Group>
       {teams.status === 'loading' && <Skeleton />}
       {teams.status === 'error' && <ErrorState message={teams.message} onRetry={reload} />}
       {teams.status === 'ok' &&
         (teams.data.length === 0 ? (
-          <EmptyState>
-            {isAdmin
-              ? 'Nenhuma equipe ainda. Crie a primeira e adicione os atletas.'
-              : 'Nenhuma equipe ainda.'}
-          </EmptyState>
+          <EmptyState>{'Nenhuma equipe ainda. Crie a primeira e adicione os atletas.'}</EmptyState>
         ) : (
           <ul className="ui-list" aria-label={`Equipes da ${org.name}`}>
             {teams.data.map((t) => (

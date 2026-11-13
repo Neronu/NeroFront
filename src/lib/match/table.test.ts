@@ -1,5 +1,6 @@
 import type { MatchStateResponse, PostEventRequest, StoredEvent } from '../api/contract';
 import { defaultRules } from '@neronu/sport-basketball';
+import { defaultRules as rules3x3 } from '@neronu/sport-basketball-3x3';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpError, NetworkError } from '../api/client';
 import { MatchTable } from './table';
@@ -220,5 +221,30 @@ describe('MatchTable', () => {
       'period_not_running',
     ]);
     expect(snap.state.teams.home.score).toBe(0);
+  });
+});
+
+describe('MatchTable no 3x3', () => {
+  it('usa o módulo do esporte da partida', async () => {
+    const base = serverState();
+    fake.state.mockImplementation(async () => ({
+      ...serverState(fake.events),
+      match: { ...base.match, sportKey: 'basketball_3x3', rules: { ...rules3x3 } },
+    }));
+    const t = makeTable();
+    await t.load();
+    expect(t.getSnapshot()!.sport.key).toBe('basketball_3x3');
+    t.record({ type: 'period_start', payload: { period: 1 } });
+    // Formato do 5x5 é recusado na hora pelo módulo do 3x3.
+    expect(t.record({ type: 'score', payload: { athleteId: 'h4', points: 3 } }).ok).toBe(false);
+    for (let i = 0; i < 10; i++)
+      t.record({ type: 'score', payload: { athleteId: 'h4', shot: 'outside' } });
+    t.record({ type: 'score', payload: { athleteId: 'h5', shot: 'free_throw' } });
+    expect(t.getSnapshot()!.state.status).toBe('finished');
+    expect(t.getSnapshot()!.state.teams.home.score).toBe(21);
+    const late = t.record({ type: 'score', payload: { athleteId: 'a4', shot: 'inside' } });
+    expect(late).toMatchObject({ ok: false, code: 'match_finished' });
+    await settle();
+    expect(fake.events).toHaveLength(12);
   });
 });

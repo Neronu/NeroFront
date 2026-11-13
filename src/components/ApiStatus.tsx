@@ -3,6 +3,8 @@ import { fetchApiStatus, type ApiStatus as Status } from '../lib/api/health';
 import { API_URL } from '../lib/env';
 import { Notice } from './ui';
 
+const listFormat = new Intl.ListFormat('pt-BR', { type: 'conjunction' });
+
 /** Estado da API e compatibilidade do módulo de esporte (Configurações). */
 export function ApiStatus() {
   const [status, setStatus] = useState<Status | null>(null);
@@ -24,23 +26,31 @@ export function ApiStatus() {
     case 'mismatch':
       return (
         <Notice tone="danger">
-          Versões incompatíveis: API {status.apiVersion}, este app {status.localVersion}. Atualize a
-          página.
+          Versões incompatíveis do módulo {status.sport}: API {status.apiVersion}, este app{' '}
+          {status.localVersion}. Atualize a página.
         </Notice>
       );
-    case 'degraded':
+    case 'degraded': {
+      const down = [
+        status.db === 'error' && 'banco de dados',
+        status.storage === 'error' && 'armazenamento de PDFs',
+        // Com o banco fora a conferência também falha: não repete o aviso.
+        status.migrations === 'error' && status.db !== 'error' && 'conferência das migrações',
+      ].filter((s): s is string => Boolean(s));
       return (
         <Notice tone="danger">
-          API no ar com falha em{' '}
-          {[
-            status.db === 'error' && 'banco de dados',
-            status.storage === 'error' && 'armazenamento de PDFs',
-          ]
-            .filter(Boolean)
-            .join(' e ')}
-          . Reative o projeto no Supabase antes da rodada.
+          {down.length > 0 && (
+            <>
+              API no ar com falha em {listFormat.format(down)}.
+              {(status.db === 'error' || status.storage === 'error') &&
+                ' Reative o projeto no Supabase antes da rodada.'}{' '}
+            </>
+          )}
+          {status.migrations === 'pending' &&
+            'O banco não recebeu todas as migrações desta versão da API, e salvar dados pode falhar. Rode pnpm --filter api prisma:deploy no neroBack antes da rodada.'}
         </Notice>
       );
+    }
     case 'offline':
       return (
         <Notice tone="danger">

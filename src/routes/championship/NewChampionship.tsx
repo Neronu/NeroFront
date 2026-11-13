@@ -1,13 +1,18 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { Button, Card, Notice, PageHeader, TextField } from '../../components/ui';
+import { Button, Group, Notice, PageHeader, SelectField, TextField } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
+import type { ChampionshipFormat } from '../../lib/api/contract';
 import { fromLocalInput } from '../../lib/dates';
+import { CHAMPIONSHIP_FORMATS, championshipFormatName, sportName } from '../../lib/format';
 import { useOrg } from '../../lib/session';
+import { SPORTS } from '../../lib/sports';
 
 export function NewChampionship() {
   const { org } = useOrg();
   const [name, setName] = useState('');
+  const [sportKey, setSportKey] = useState(SPORTS[0]!.key);
+  const [format, setFormat] = useState<ChampionshipFormat | ''>('');
   const [code, setCode] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [rosterLockAt, setRosterLockAt] = useState('');
@@ -16,11 +21,13 @@ export function NewChampionship() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!format) return;
     try {
       const ch = await api.createChampionship({
         organizationId: org.id,
         name,
-        sportKey: 'basketball',
+        sportKey,
+        format,
         ...(code.trim() ? { slug: code.trim().toLowerCase() } : {}),
         ...(startsAt ? { startsAt: fromLocalInput(startsAt)! } : {}),
         ...(rosterLockAt ? { rosterLockAt: fromLocalInput(rosterLockAt)! } : {}),
@@ -35,9 +42,9 @@ export function NewChampionship() {
     <div className="ui-stack ui-stack--section lyt-reading">
       <PageHeader
         title="Novo campeonato"
-        meta={`O campeonato nasce com as regras de basquete da ${org.name}; você pode ajustá-las depois.`}
+        meta={`O campeonato nasce com as regras de ${sportName(sportKey).toLowerCase()} da ${org.name}.`}
       />
-      <Card>
+      <Group>
         <form onSubmit={submit} className="ui-form">
           <TextField
             label="Nome"
@@ -46,9 +53,37 @@ export function NewChampionship() {
             placeholder="Copa das Atléticas 2026"
             required
           />
+          <div className="ui-form-row ui-form-row--top">
+            <SelectField
+              label="Esporte"
+              value={sportKey}
+              onChange={(e) => setSportKey(e.target.value)}
+              required
+            >
+              {SPORTS.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.name}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField
+              label="Formato da disputa"
+              value={format}
+              onChange={(e) => setFormat(e.target.value as ChampionshipFormat)}
+              required
+            >
+              <option value="" disabled>
+                Escolha o formato
+              </option>
+              {CHAMPIONSHIP_FORMATS.map((f) => (
+                <option key={f} value={f}>
+                  {championshipFormatName(f)}
+                </option>
+              ))}
+            </SelectField>
+          </div>
           <TextField
             label="Código (opcional)"
-            help="Quem tiver o código encontra o campeonato. Letras, números e hífen; se vazio, geramos a partir do nome."
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="CIA-2026"
@@ -59,7 +94,7 @@ export function NewChampionship() {
             minLength={3}
             maxLength={60}
           />
-          <div className="ui-form-row">
+          <div className="ui-form-row ui-form-row--top">
             <TextField
               label="Início"
               type="datetime-local"
@@ -67,9 +102,8 @@ export function NewChampionship() {
               onChange={(e) => setStartsAt(e.target.value)}
             />
             <TextField
-              label="Trava dos elencos"
+              label="Fim das inscrições"
               type="datetime-local"
-              help="Depois disso, as equipes não mudam o elenco inscrito."
               value={rosterLockAt}
               onChange={(e) => setRosterLockAt(e.target.value)}
             />
@@ -81,7 +115,7 @@ export function NewChampionship() {
             </Button>
           </div>
         </form>
-      </Card>
+      </Group>
     </div>
   );
 }

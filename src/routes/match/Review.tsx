@@ -1,10 +1,9 @@
-import { basketball, periodLabel } from '@neronu/sport-basketball';
 import { useState } from 'react';
 import { ChevronLeft, FilePen, FileText } from 'lucide-react';
 import { useParams } from 'react-router';
 import {
   Button,
-  Card,
+  Group,
   DataTable,
   ErrorState,
   Icon,
@@ -15,6 +14,7 @@ import {
 import { api, errorMessage } from '../../lib/api/client';
 import type { Match } from '../../lib/api/contract';
 import { formatDateTime } from '../../lib/dates';
+import { sportTable } from '../../lib/match/sport-table';
 import { useMatchTable } from '../../lib/match/useMatchTable';
 import { useSession } from '../../lib/session';
 import { useAsync } from '../../lib/useAsync';
@@ -42,12 +42,13 @@ export function Review() {
       server.roster[s].roster.map((r) => [r.athleteId, r.name] as const),
     ),
   );
-  const stats = basketball.playerStats(state);
-  const periods = Array.from({ length: state.period }, (_, i) => periodLabel(state, i + 1));
+  const { module } = snapshot.sport;
+  const sport = sportTable(snapshot.sport.key);
+  const stats = module.playerStats(state);
+  const periods = Array.from({ length: state.period }, (_, i) => sport.periodName(state, i + 1));
   const finished = state.status === 'finished';
   const pending = snapshot.pending.length;
   const sides = ['home', 'away'] as const;
-  const short = (p: string) => p.replace(' quarto', 'Q').replace(' tempo', 'T');
 
   const close = async () => {
     if (!confirm('Fechar a súmula? Depois disso, nenhum lance pode ser alterado na mesa.')) return;
@@ -96,7 +97,7 @@ export function Review() {
           { key: 'team', header: 'Equipe', lead: true, render: (s) => teamName(s) },
           ...periods.map((p, i) => ({
             key: p,
-            header: short(p),
+            header: sport.shortPeriod(p),
             title: p,
             numeric: true,
             render: (s: (typeof sides)[number]) => state.teams[s].scoreByPeriod[i] ?? 0,
@@ -122,7 +123,7 @@ export function Review() {
             columns={[
               { key: 'num', header: 'Nº', numeric: true, render: (l) => l.number },
               { key: 'name', header: 'Atleta', lead: true, render: (l) => names.get(l.athleteId) },
-              ...basketball.statsSchema.map((c) => ({
+              ...module.statsSchema.map((c) => ({
                 key: c.key,
                 header: c.short,
                 title: c.label,
@@ -134,7 +135,7 @@ export function Review() {
         </section>
       ))}
 
-      <Card className="ui-stack">
+      <Group className="ui-stack">
         {closed ? (
           <>
             <Notice tone="positive">Súmula fechada.</Notice>
@@ -160,7 +161,7 @@ export function Review() {
             </div>
           </>
         )}
-      </Card>
+      </Group>
       {closed && rectifying && (
         <RectifyDrawer
           open
@@ -179,18 +180,16 @@ export function Review() {
 
 /**
  * Só a organizadora retifica: num jogo de campeonato, quem administra o campeonato; numa
- * partida avulsa, o admin da entidade dona. A API confere de novo.
+ * partida avulsa, a atlética dona. A API confere de novo.
  */
 function useCanRectify(match: Match): boolean {
-  const { me } = useSession();
+  const { organizations } = useSession();
   const [ch] = useAsync(
     () => (match.championshipId ? api.championship(match.championshipId) : Promise.resolve(null)),
     match.championshipId ?? '',
   );
   if (match.championshipId) return ch.status === 'ok' && !!ch.data?.canManage;
-  return (me?.memberships ?? []).some(
-    (m) => m.role === 'admin' && m.organization.id === match.organizationId,
-  );
+  return organizations.some((o) => o.id === match.organizationId);
 }
 
 function RectifyAction({ match, onOpen }: { match: Match; onOpen(): void }) {

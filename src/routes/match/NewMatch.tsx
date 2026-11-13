@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
   Button,
-  Card,
+  Group,
   EmptyState,
   ErrorState,
   Notice,
@@ -13,6 +13,7 @@ import {
 } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import { useOrg } from '../../lib/session';
+import { DEFAULT_SPORT, SPORTS } from '../../lib/sports';
 import { useAsync } from '../../lib/useAsync';
 
 export function NewMatch() {
@@ -20,6 +21,7 @@ export function NewMatch() {
   const [teams, reload] = useAsync(() => api.teams(org.id), org.id);
   const [home, setHome] = useState('');
   const [away, setAway] = useState('');
+  const [sportKey, setSportKey] = useState(DEFAULT_SPORT.key);
   const [venue, setVenue] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -29,7 +31,7 @@ export function NewMatch() {
     try {
       const match = await api.createMatch({
         organizationId: org.id,
-        sportKey: 'basketball',
+        sportKey,
         homeTeamId: home,
         awayTeamId: away,
         ...(venue ? { venue } : {}),
@@ -67,8 +69,21 @@ export function NewMatch() {
   return (
     <div className="ui-stack ui-stack--section lyt-reading">
       {header}
-      <Card>
+      <Group>
         <form onSubmit={create} className="ui-form">
+          {SPORTS.length > 1 && (
+            <SelectField
+              label="Esporte"
+              value={sportKey}
+              onChange={(e) => setSportKey(e.target.value)}
+            >
+              {SPORTS.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.name}
+                </option>
+              ))}
+            </SelectField>
+          )}
           <SelectField
             label="Mandante (A)"
             value={home}
@@ -104,7 +119,7 @@ export function NewMatch() {
             </Button>
           </div>
         </form>
-      </Card>
+      </Group>
     </div>
   );
 }

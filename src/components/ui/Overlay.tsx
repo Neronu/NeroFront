@@ -14,12 +14,15 @@ export function Overlay({
   open,
   onClose,
   title,
+  titleClassName,
   kind = 'modal',
   children,
 }: {
   open: boolean;
   onClose(): void;
   title: string;
+  /** Classe extra no título (ex.: ui-wordmark para a gaveta do painel). */
+  titleClassName?: string;
   kind?: 'modal' | 'drawer';
   children: ReactNode;
 }) {
@@ -77,7 +80,9 @@ export function Overlay({
         aria-labelledby={titleId}
       >
         <div className="ui-dialog__header">
-          <h2 id={titleId}>{title}</h2>
+          <h2 id={titleId} className={titleClassName}>
+            {title}
+          </h2>
           <button type="button" className="ui-button ui-button--quiet" onClick={onClose}>
             <Icon icon={X} />
             Fechar

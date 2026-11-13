@@ -1,10 +1,12 @@
 import type { ChampionshipMatch, StandingRow } from '../../lib/api/contract';
-import { render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
+import { api } from '../../lib/api/client';
 import { resolveTab } from './ChampionshipPage';
-import { groupByDay, ResultsTab } from './ResultsTab';
-import { qualifiesCut, StandingsTab } from './StandingsTab';
+import { NewChampionship } from './NewChampionship';
+import { groupByDay, LIVE_REFRESH_MS, ResultsTab } from './ResultsTab';
+import { projectSide, qualifiesCut, standingColumns, StandingsTab } from './StandingsTab';
 import { StatsTab } from './StatsTab';
 
 const row = (
@@ -69,6 +71,7 @@ const standings = {
 
 vi.mock('../../lib/api/client', () => ({
   api: {
+    createChampionship: vi.fn(async () => ({ id: 'novo' })),
     standings: vi.fn(async () => standings),
     bracket: vi.fn(async () => ({ phases: [], champion: null })),
     highlights: vi.fn(async () => ({
@@ -136,7 +139,52 @@ vi.mock('../../lib/api/client', () => ({
   },
   errorMessage: (e: unknown) => String(e),
 }));
-vi.mock('../../lib/session', () => ({ useSession: () => ({ me: null }) }));
+vi.mock('../../lib/session', () => ({
+  useSession: () => ({ me: null, organizations: [] }),
+  useOrg: () => ({ org: { id: 'o1', name: 'Atlética Computação' } }),
+}));
+
+describe('Novo campeonato', () => {
+  const renderPage = () =>
+    render(
+      <MemoryRouter>
+        <NewChampionship />
+      </MemoryRouter>,
+    );
+
+  it('pede esporte e formato da disputa e os envia na criação', async () => {
+    renderPage();
+    const sport = screen.getByLabelText('Esporte');
+    expect(sport).toHaveValue('basketball');
+    expect(screen.getByText(/regras de basquete da Atlética Computação/)).toBeInTheDocument();
+    const format = screen.getByLabelText('Formato da disputa');
+    expect(format).toHaveValue('');
+    expect(
+      within(format)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['Escolha o formato', 'Mata-mata', 'Pontos corridos', 'Misto (grupos + mata-mata)']);
+    fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Copa 2026' } });
+    fireEvent.change(format, { target: { value: 'knockout' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Criar campeonato' }));
+    await vi.waitFor(() =>
+      expect(api.createChampionship).toHaveBeenCalledWith({
+        organizationId: 'o1',
+        name: 'Copa 2026',
+        sportKey: 'basketball',
+        format: 'knockout',
+      }),
+    );
+  });
+
+  it('não cria sem formato escolhido', () => {
+    vi.mocked(api.createChampionship).mockClear();
+    renderPage();
+    fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Copa 2026' } });
+    fireEvent.submit(screen.getByRole('button', { name: 'Criar campeonato' }).closest('form')!);
+    expect(api.createChampionship).not.toHaveBeenCalled();
+  });
+});
 
 describe('abas do campeonato', () => {
   it('leva os valores antigos de ?aba= para as abas novas', () => {
@@ -163,12 +211,22 @@ describe('Classificação', () => {
     const headers = within(table)
       .getAllByRole('columnheader')
       .map((h) => h.textContent);
-    expect(headers).toEqual(['#', 'Equipe', 'P', 'J', 'V', 'D', '% Vit.', 'PF', 'PC', 'Saldo']);
+    expect(headers).toEqual(['#', 'Equipe', 'P', 'J', 'V', 'D', 'PF', 'PC', 'Saldo']);
     expect(within(table).getByText('+10')).toBeInTheDocument();
     expect(within(table).getByText('−10')).toBeInTheDocument();
     expect(within(table).getByText('Direito').closest('tr')).toHaveClass('is-divider-after');
-    expect(screen.getByText(/Acima da linha/)).toBeInTheDocument();
-    expect(screen.getByText(/P: pontos/)).toBeInTheDocument();
+    expect(screen.queryByText(/Acima da linha/)).toBeNull();
+    expect(screen.queryByText(/P: pontos/)).toBeNull();
+  });
+
+  it('projeta a vaga indefinida do mata-mata com a posição atual do grupo', () => {
+    const groups = [{ name: 'Grupo A', rows: [row(1, 'Medicina'), row(2, 'Direito')] }];
+    const open = { label: '2º do Grupo A', registrationId: null, bye: false };
+    expect(projectSide(open, groups)).toEqual({ name: 'Direito', source: '2º do Grupo A' });
+    const set = { label: 'Odonto', registrationId: 'r9', bye: false };
+    expect(projectSide(set, groups)).toEqual({ name: 'Odonto' });
+    const other = { label: '1º do Grupo B', registrationId: null, bye: false };
+    expect(projectSide(other, groups)).toEqual({ name: '1º do Grupo B' });
   });
 });
 
@@ -208,6 +266,108 @@ describe('Resultados', () => {
     expect(screen.getByText('Sem data')).toBeInTheDocument();
     expect(screen.getByText('A definir')).toBeInTheDocument();
   });
+
+  it('atualiza os placares sozinha a cada 5s enquanto há jogo ao vivo', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      const calls = vi.mocked(api.championshipMatches);
+      calls.mockClear();
+      render(
+        <MemoryRouter>
+          <ResultsTab
+            ch={
+              {
+                id: 'c1',
+                status: 'running',
+                canManage: false,
+                organizer: { id: 'o1', name: 'Org' },
+              } as never
+            }
+            onChange={() => {}}
+          />
+        </MemoryRouter>,
+      );
+      await screen.findByRole('table', { name: /Engenharia 20 a 22 Medicina/ });
+      expect(calls).toHaveBeenCalledTimes(1);
+
+      // O placar ao vivo muda na API e aparece sem recarregar a página.
+      calls.mockResolvedValueOnce([
+        match('m2', {
+          status: 'in_progress',
+          homeScore: 24,
+          awayScore: 22,
+          home: { registrationId: 'x', teamName: 'Engenharia' },
+          away: { registrationId: 'y', teamName: 'Medicina' },
+        }),
+      ]);
+      act(() => vi.advanceTimersByTime(LIVE_REFRESH_MS));
+      expect(
+        await screen.findByRole('table', { name: /Engenharia 24 a 22 Medicina/ }),
+      ).toBeInTheDocument();
+      expect(calls).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('não fica consultando sem jogo ao vivo', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      const calls = vi.mocked(api.championshipMatches);
+      calls.mockClear();
+      calls.mockResolvedValueOnce([match('m1', {})]);
+      render(
+        <MemoryRouter>
+          <ResultsTab
+            ch={
+              {
+                id: 'c1',
+                status: 'running',
+                canManage: false,
+                organizer: { id: 'o1', name: 'Org' },
+              } as never
+            }
+            onChange={() => {}}
+          />
+        </MemoryRouter>,
+      );
+      await screen.findByRole('table', { name: /Computação 58 a 51 Direito/ });
+      act(() => vi.advanceTimersByTime(LIVE_REFRESH_MS * 3));
+      expect(calls).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  const generating = (format: string | null) =>
+    render(
+      <MemoryRouter>
+        <ResultsTab
+          ch={
+            {
+              id: 'c1',
+              status: 'registration',
+              format,
+              canManage: true,
+              organizer: { id: 'o1', name: 'Org' },
+            } as never
+          }
+          onChange={() => {}}
+        />
+      </MemoryRouter>,
+    );
+
+  it('monta a tabela no formato escolhido na criação, sem perguntar de novo', () => {
+    generating('round_robin');
+    expect(screen.queryByLabelText('Formato')).not.toBeInTheDocument();
+    expect(screen.getByText('Pontos corridos')).toBeInTheDocument();
+    expect(screen.getByText('Turno e returno')).toBeInTheDocument();
+  });
+
+  it('campeonato antigo, sem formato, ainda escolhe ao montar a tabela', () => {
+    generating(null);
+    expect(screen.getByLabelText('Formato')).toHaveValue('groups_knockout');
+  });
 });
 
 describe('Estatísticas', () => {
@@ -236,5 +396,13 @@ describe('Estatísticas', () => {
     const aside = await screen.findByRole('complementary', { name: 'Destaques' });
     expect(within(aside).getByText('Direito')).toBeInTheDocument();
     expect(within(aside).getByRole('link', { name: 'Bia' })).toHaveAttribute('href', '/atletas/a3');
+  });
+});
+
+describe('colunas da classificação por esporte', () => {
+  it('3x3 mostra vitórias e média, sem pontos de classificação nem saldo', () => {
+    const keys = (sport: string) => standingColumns(sport).map((c) => c.key);
+    expect(keys('basketball')).toContain('diff');
+    expect(keys('basketball_3x3')).toEqual(['pos', 'team', 'played', 'won', 'lost', 'pf', 'avg']);
   });
 });

@@ -78,6 +78,10 @@
   font-size: 14px;
   line-height: 20px;
 }
+.sm-top__item {
+  display: inline-flex;
+  gap: var(--space-2);
+}
 .sm-top__bonus {
   font-weight: 600;
   text-transform: uppercase;
@@ -85,10 +89,120 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.sm-top__mid {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
 .sm-top__center {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+/* Relógio do período: tempo em cima, botão de iniciar/pausar/retomar embaixo. */
+.sm-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--on-court);
+}
+.sm-clock__time {
+  min-width: 5ch;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  transition: var(--transition-color);
+}
+.sm-clock.is-low .sm-clock__time {
+  background: var(--live);
+  color: var(--on-live);
+}
+.sm-clock__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  height: var(--sm-btn);
+  min-width: 112px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--gold);
+  color: var(--on-gold);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-color);
+}
+.sm-clock__btn:disabled {
+  background: var(--brand-strong);
+  color: var(--on-court);
+  cursor: default;
+}
+.sm-clock__btn:focus-visible {
+  outline-color: var(--on-court);
+}
+/* Cronômetro de posse: tempo em cima, reinícios (24/14 ou 12) embaixo. Sem play próprio. */
+.sm-shot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--on-court);
+}
+.sm-shot__time {
+  min-width: 4ch;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  transition: var(--transition-color);
+}
+.sm-shot.is-low .sm-shot__time {
+  background: var(--live);
+  color: var(--on-live);
+}
+.sm-shot__resets {
+  display: flex;
+  gap: var(--space-1);
+}
+.sm-shot__btn {
+  height: var(--sm-btn);
+  min-width: var(--sm-btn);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--on-court);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--on-court);
+  font: inherit;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: var(--transition-color);
+}
+.sm-shot__btn:hover:not(:disabled) {
+  background: var(--brand-strong);
+}
+.sm-shot__btn:disabled {
+  border-color: var(--brand-strong);
+  background: var(--brand-strong);
+  cursor: default;
+}
+.sm-shot__btn:focus-visible {
+  outline-color: var(--on-court);
 }
 .sm-top__score {
   display: flex;
@@ -141,6 +255,28 @@
 }
 .is-compact .sm-top__sep {
   font-size: 28px;
+}
+.is-compact .sm-top__mid,
+.is-compact .sm-clock,
+.is-compact .sm-shot {
+  gap: var(--space-2);
+}
+.is-compact .sm-clock,
+.is-compact .sm-shot {
+  flex-direction: row;
+  padding-left: var(--space-3);
+}
+.is-compact .sm-clock__time,
+.is-compact .sm-shot__time {
+  font-size: 22px;
+  line-height: 28px;
+}
+.is-compact .sm-clock__btn {
+  min-width: var(--sm-btn);
+  padding: 0;
+}
+.is-compact .sm-clock__label {
+  display: none;
 }
 .is-compact .sm-top__period {
   font-size: 12px;
@@ -304,6 +440,12 @@
 .sm-btn--primary:hover,
 .sm-btn--primary:active {
   background: var(--brand-strong);
+}
+.sm-btn--primary.is-attention,
+.sm-btn--primary.is-attention:hover,
+.sm-btn--primary.is-attention:active {
+  background: var(--live);
+  color: var(--on-live);
 }
 .sm-btn:disabled {
   background: var(--surface-sunken);

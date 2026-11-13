@@ -182,15 +182,14 @@
   border-bottom-color: var(--ink);
 }
 
-/* ─── Cartão / superfície ──────────────────────────────────────────────── */
-.ui-card {
-  background: var(--surface);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
+/* ─── Grupo (lista contínua) ──────────────────────────────────────────── */
+/* Sem caixa: direto sobre bg, separado só por line e espaço em branco. */
+.ui-group {
+  padding-block: var(--space-4);
+  border-top: 1px solid var(--line);
 }
-.ui-card--flush {
-  padding: 0;
-  overflow: hidden;
+.ui-group--flush {
+  padding-block: 0;
 }
 .ui-stack {
   display: flex;
@@ -199,6 +198,9 @@
 }
 .ui-stack--section {
   gap: var(--space-8);
+}
+.ui-stack--tight {
+  gap: var(--space-1);
 }
 
 /* ─── Cabeçalho de página ─────────────────────────────────────────────── */
@@ -223,6 +225,34 @@
   font-size: 14px;
   line-height: 20px;
 }
+.ui-page-header__meta:has(> .ui-meta-grid) {
+  margin-top: var(--space-2);
+}
+
+/* ─── Metadados em grid (rótulo/valor) ────────────────────────────────── */
+.ui-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-3) var(--space-6);
+  margin: 0;
+}
+.ui-meta-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ui-meta-grid__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ui-meta-grid__label {
+  color: var(--muted);
+}
+.ui-meta-grid__value {
+  margin: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
 @media (max-width: 479.98px) {
   .ui-page-header > .ui-button--primary {
     width: 100%;
@@ -231,9 +261,7 @@
 
 /* ─── Tabela de dados ──────────────────────────────────────────────────── */
 .ui-table-wrap {
-  background: var(--surface);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  border-bottom: 1px solid var(--line);
 }
 .ui-table {
   width: 100%;
@@ -242,7 +270,6 @@
   line-height: 20px;
 }
 .ui-table th {
-  background: var(--surface-sunken);
   color: var(--muted);
   font-size: 12px;
   line-height: 16px;
@@ -251,6 +278,7 @@
   letter-spacing: 0.04em;
   text-align: left;
   padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
 .ui-table td {
@@ -258,6 +286,18 @@
   border-top: 1px solid var(--line);
   color: var(--ink);
   vertical-align: middle;
+}
+/* A primeira e a última coluna alinham com o texto da página. */
+.ui-table th:first-child,
+.ui-table td:first-child {
+  padding-left: 0;
+}
+.ui-table th:last-child,
+.ui-table td:last-child {
+  padding-right: 0;
+}
+.ui-table tbody tr:first-child td {
+  border-top: none;
 }
 .ui-table .is-num {
   text-align: right;
@@ -282,48 +322,48 @@
   border-bottom: 2px solid var(--border);
 }
 
-/* Abaixo de bp-md: cada linha vira cartão empilhado. */
+/* Abaixo de bp-md: cada linha vira um bloco empilhado, separado por line. */
 @media (max-width: 767.98px) {
-  .ui-table--cards thead {
+  .ui-table--stacked thead {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
   }
-  .ui-table--cards,
-  .ui-table--cards tbody,
-  .ui-table--cards tr,
-  .ui-table--cards td {
+  .ui-table--stacked,
+  .ui-table--stacked tbody,
+  .ui-table--stacked tr,
+  .ui-table--stacked td {
     display: block;
   }
-  .ui-table--cards tr {
-    padding: var(--space-3) var(--space-4);
+  .ui-table--stacked tr {
+    padding: var(--space-3) 0;
     border-top: 1px solid var(--line);
   }
-  .ui-table--cards tr:first-child {
+  .ui-table--stacked tr:first-child {
     border-top: none;
   }
-  .ui-table--cards td {
+  .ui-table--stacked td {
     border: none;
     padding: 0;
     color: var(--muted);
   }
-  .ui-table--cards td.is-lead {
+  .ui-table--stacked td.is-lead {
     color: var(--ink);
     font-size: 18px;
     line-height: 24px;
     font-weight: 600;
     margin-bottom: var(--space-1);
   }
-  .ui-table--cards td:not(.is-lead)::before {
+  .ui-table--stacked td:not(.is-lead)::before {
     content: attr(data-label) ': ';
     font-family: var(--font-sans);
   }
-  .ui-table--cards td:not(.is-lead):empty {
+  .ui-table--stacked td:not(.is-lead):empty {
     display: none;
   }
-  .ui-table--cards .is-num {
+  .ui-table--stacked .is-num {
     text-align: left;
   }
 }
@@ -335,11 +375,11 @@
 .ui-table--sticky .is-lead {
   position: sticky;
   left: 0;
-  background: var(--surface);
+  background: var(--bg);
   z-index: 1;
 }
 .ui-table--sticky th.is-lead {
-  background: var(--surface-sunken);
+  background: var(--bg);
 }
 
 /* ─── Estados de tela ──────────────────────────────────────────────────── */
@@ -348,9 +388,8 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-6) var(--space-4);
-  background: var(--surface);
-  border-radius: var(--radius-md);
+  padding: var(--space-6) 0;
+  border-block: 1px solid var(--line);
 }
 .ui-state p {
   margin: 0;
@@ -423,6 +462,17 @@
 .ui-theme-toggle {
   color: var(--ink);
 }
+.ui-theme-toggle--row {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding-inline: 0;
+  justify-content: flex-start;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+}
+.ui-theme-toggle--row > .t-small {
+  margin-left: auto;
+}
 .ui-theme-toggle.is-compact {
   min-width: var(--touch-min);
   padding-inline: 0;
@@ -456,8 +506,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  background: var(--surface);
-  border-radius: var(--radius-md);
+  border-block: 1px solid var(--line);
 }
 .ui-list > li {
   display: flex;
@@ -465,7 +514,7 @@
   align-items: center;
   gap: var(--space-2) var(--space-3);
   min-height: var(--touch-min);
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-3) 0;
 }
 .ui-list > li + li {
   border-top: 1px solid var(--line);
@@ -530,6 +579,10 @@
   align-items: flex-end;
   gap: var(--space-3);
 }
+/* Só campos, com ajuda em alguns: alinha pelos rótulos em vez da base. */
+.ui-form-row--top {
+  align-items: flex-start;
+}
 .ui-form-row > .ui-field {
   flex: 1 1 200px;
 }
@@ -551,7 +604,7 @@
     min-height: var(--bottomnav-h);
     margin: 0 calc(-1 * var(--space-4));
     padding: var(--space-2) var(--space-4) calc(var(--space-2) + env(safe-area-inset-bottom));
-    background: var(--surface);
+    background: var(--bg);
     border-top: 1px solid var(--line);
   }
   .ui-savebar > .ui-button {
@@ -617,7 +670,7 @@
 
 .ui-form p,
 .ui-stack > p,
-.ui-card > p {
+.ui-group > p {
   margin: 0;
 }
 
@@ -631,7 +684,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-1) var(--space-4);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) 0;
 }
 .ui-rule + .ui-rule {
   border-top: 1px solid var(--line);
@@ -708,4 +761,14 @@
     font-size: 48px;
     line-height: 48px;
   }
+}
+
+/* Lixo na linha da lista de partidas: só o ícone, alvo de toque mínimo. */
+.match-list__delete {
+  min-width: var(--touch-min);
+  padding-inline: 0;
+  color: var(--muted);
+}
+.match-list__delete:hover {
+  color: var(--danger);
 }

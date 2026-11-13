@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router';
 import {
   Button,
-  Card,
+  Group,
   EmptyState,
   ErrorState,
   Notice,
@@ -25,14 +25,14 @@ import { TeamInvites } from './TeamInvites';
  */
 export function TeamDetailPage() {
   const { id = '' } = useParams();
-  const { me, personalOrg } = useSession();
+  const { organizations, personalOrg } = useSession();
   const [team, reload] = useAsync(() => api.team(id), id);
 
   if (team.status === 'loading') return <Skeleton lines={4} />;
   if (team.status === 'error') return <ErrorState message={team.message} onRetry={reload} />;
   const orgId = team.data.organizationId;
-  const membership = (me?.memberships ?? []).find((m) => m.organization.id === orgId);
-  const athletic = membership?.role === 'admin';
+  const athleticOrg = organizations.find((o) => o.id === orgId);
+  const athletic = !!athleticOrg;
   const owner = personalOrg?.id === orgId;
 
   return (
@@ -41,7 +41,7 @@ export function TeamDetailPage() {
       reload={reload}
       athletic={athletic}
       canManage={athletic || owner}
-      orgName={owner ? 'Sua equipe' : (membership?.organization.name ?? 'Equipe')}
+      orgName={owner ? 'Sua equipe' : (athleticOrg?.name ?? 'Equipe')}
     />
   );
 }
@@ -124,7 +124,7 @@ function TeamView({
     <div className="ui-stack ui-stack--section">
       <PageHeader eyebrow={orgName} title={data.name} />
       {athletic && (
-        <Card>
+        <Group>
           <div className="ui-form">
             <form onSubmit={add} className="ui-form-row">
               <TextField
@@ -176,7 +176,7 @@ function TeamView({
             )}
             {error && <Notice tone="danger">{error}</Notice>}
           </div>
-        </Card>
+        </Group>
       )}
       {data.players.length === 0 ? (
         <EmptyState>

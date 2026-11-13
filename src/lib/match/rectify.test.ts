@@ -1,6 +1,7 @@
 import { defaultRules, type BasketballRules } from '@neronu/sport-basketball';
 import type { MatchSetup } from '@neronu/sport-core';
 import { describe, expect, it } from 'vitest';
+import { sportOf } from '../sports';
 import { applyChanges, previewRectification } from './rectify';
 import type { TableEvent } from './table';
 
@@ -49,7 +50,7 @@ describe('retificação', () => {
   });
 
   it('mostra o novo placar antes de enviar', () => {
-    const preview = previewRectification(setup, rules, game(), [
+    const preview = previewRectification(sportOf('basketball').module, setup, rules, game(), [
       {
         op: 'add',
         afterEventId: 'c2',
@@ -65,7 +66,7 @@ describe('retificação', () => {
 
   it('recusa mudança que deixa o jogo inválido, apontando o lance', () => {
     // Cesta antes do início do 1º quarto: período não está rodando.
-    const preview = previewRectification(setup, rules, game(), [
+    const preview = previewRectification(sportOf('basketball').module, setup, rules, game(), [
       {
         op: 'add',
         afterEventId: null,
@@ -77,7 +78,7 @@ describe('retificação', () => {
   });
 
   it('recusa empate no fim (o jogo deixa de terminar)', () => {
-    const preview = previewRectification(setup, rules, game(), [
+    const preview = previewRectification(sportOf('basketball').module, setup, rules, game(), [
       { op: 'void', targetId: 'c1' },
       { op: 'void', targetId: 'c2' },
     ]);

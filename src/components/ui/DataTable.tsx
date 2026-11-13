@@ -3,22 +3,22 @@ import type { ReactNode } from 'react';
 export interface Column<T> {
   key: string;
   header: ReactNode;
-  /** Rótulo em texto usado no modo cartão (celular); padrão: o header, se for texto. */
+  /** Rótulo em texto usado no modo empilhado (celular); padrão: o header, se for texto. */
   label?: string;
   /** Título acessível da sigla (ex.: "Vitórias" para "V"). */
   title?: string;
   render(row: T): ReactNode;
   /** Número comparável em coluna: stat, alinhado à direita. */
   numeric?: boolean;
-  /** Coluna de destaque: vira o título (h3) do cartão; fica fixa no modo `scroll`. */
+  /** Coluna de destaque: vira o título da linha empilhada; fica fixa no modo `scroll`. */
   lead?: boolean;
   /** Classe extra na célula e no cabeçalho (ex.: largura fixa). */
   className?: string;
 }
 
 /**
- * Tabela em surface, cabeçalho em label sobre surface-sunken e linhas separadas por line.
- * mode="cards": abaixo de bp-md cada linha vira um cartão empilhado.
+ * Tabela direto sobre bg: cabeçalho em label e linhas separadas só por line, sem caixa.
+ * mode="stacked": abaixo de bp-md cada linha vira um bloco empilhado, separado por line.
  * mode="scroll": as colunas lead ficam fixas e os números rolam na horizontal.
  */
 export function DataTable<T>({
@@ -26,7 +26,7 @@ export function DataTable<T>({
   rows,
   rowKey,
   caption,
-  mode = 'cards',
+  mode = 'stacked',
   onRowClick,
   dividerAfter,
   className,
@@ -35,7 +35,7 @@ export function DataTable<T>({
   rows: T[];
   rowKey(row: T): string;
   caption?: string;
-  mode?: 'cards' | 'scroll';
+  mode?: 'stacked' | 'scroll';
   onRowClick?(row: T): void;
   /** Linha depois da qual entra a divisória forte em border (zona de classificação). */
   dividerAfter?(row: T, index: number): boolean;
@@ -43,7 +43,9 @@ export function DataTable<T>({
 }) {
   return (
     <div className={cls('ui-table-wrap', mode === 'scroll' && 'ui-table-wrap--scroll', className)}>
-      <table className={`ui-table ${mode === 'cards' ? 'ui-table--cards' : 'ui-table--sticky'}`}>
+      <table
+        className={`ui-table ${mode === 'stacked' ? 'ui-table--stacked' : 'ui-table--sticky'}`}
+      >
         {caption && <caption className="sr-only">{caption}</caption>}
         <thead>
           <tr>

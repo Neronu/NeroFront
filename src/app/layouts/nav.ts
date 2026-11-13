@@ -4,6 +4,7 @@ import {
   Settings,
   Shield,
   SlidersHorizontal,
+  Swords,
   Trophy,
   UserRound,
   UserSearch,
@@ -33,8 +34,9 @@ export const COMMON_NAV: NavItem[] = [
   { to: '/perfil', label: 'Perfil', icon: UserRound },
 ];
 
-/** Só para membro de atlética (a selecionada no painel). */
+/** Só para a atlética (a selecionada no painel). */
 export const ATHLETIC_NAV: NavItem[] = [
+  { to: '/partidas', label: 'Partidas', icon: Swords },
   { to: '/atletas', label: 'Atletas', icon: Users },
   { to: '/regras', label: 'Módulos de esporte', icon: SlidersHorizontal },
   { to: '/configuracoes', label: 'Configurações', icon: Settings },
@@ -48,8 +50,8 @@ export const ADMIN_NAV: NavItem[] = [
 ];
 
 /**
- * Menu por perfil, acumulável: os 4 itens comuns para todos; o grupo da atlética para quem é
- * membro de uma (com o nome dela); "Administração" para o admin da plataforma.
+ * Menu por perfil, acumulável: os 4 itens comuns para todos; o grupo da atlética para a conta
+ * da atlética (com o nome dela); "Administração" para o admin da plataforma.
  */
 export function navFor(athletic: string | null, isSystemAdmin: boolean): NavGroup[] {
   const groups: NavGroup[] = [{ items: COMMON_NAV }];

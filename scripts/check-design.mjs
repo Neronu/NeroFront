@@ -1,6 +1,7 @@
 // Guarda do sistema de design (estilo flat, seção 2 e 16 da identidade visual).
 // Falha se, fora de src/styles/tokens.css, aparecer cor fixa, sombra, degradê, desfoque,
-// raio fora dos tokens ou emoji na interface. Rode com `node scripts/check-design.mjs`.
+// raio fora dos tokens, layout em cartão ou emoji na interface. Conteúdo é lista contínua:
+// separa por line (1px) e espaço em branco, nunca por caixa. Rode com `node scripts/check-design.mjs`.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
@@ -17,12 +18,17 @@ const CSS_RULES = [
     /border-radius\s*:(?!\s*(0\b|var\(--radius-(sm|md|lg)\)|inherit))/,
     'raio fora de radius-sm/md/lg',
   ],
+  [/\.ui-card\b|\.ui-table--cards\b/, 'layout em cartão: use lista contínua com divisórias (line)'],
 ];
 const TSX_RULES = [
   [/['"`]#[0-9a-fA-F]{3,8}['"`]/, 'cor fixa em componente: use um token'],
   [/\b(boxShadow|textShadow)\s*:/, 'sombra em estilo inline'],
   [/\b(linear|radial)-gradient\(/, 'degradê em estilo inline'],
   [/\p{Extended_Pictographic}/u, 'emoji na interface'],
+  [
+    /\bui-card\b|<Card\b|mode=["']cards["']/,
+    'layout em cartão: use Group ou lista contínua com divisórias (line)',
+  ],
 ];
 
 function walk(dir) {
@@ -59,4 +65,6 @@ if (problems.length) {
   console.error(problems.join('\n'));
   process.exit(1);
 }
-console.log('Sistema de design: nenhuma cor fixa, sombra, degradê ou emoji fora dos tokens.');
+console.log(
+  'Sistema de design: nenhuma cor fixa, sombra, degradê, cartão ou emoji fora dos tokens.',
+);

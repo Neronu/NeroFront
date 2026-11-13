@@ -1,4 +1,4 @@
-import { ChampionshipCards } from '../../components/ChampionshipCards';
+import { ChampionshipList } from '../../components/ChampionshipList';
 import { Button, EmptyState, ErrorState, PageHeader, Skeleton } from '../../components/ui';
 import { api } from '../../lib/api/client';
 import { useSession } from '../../lib/session';
@@ -6,11 +6,11 @@ import { useAsync } from '../../lib/useAsync';
 
 /**
  * Campeonatos (menu): todos os do usuário — os das atléticas dele e os em que joga ou tem
- * equipe inscrita. Admin de atlética cria campeonatos aqui.
+ * equipe inscrita. A atlética cria campeonatos aqui.
  */
 export function MyChampionships() {
-  const { org, role } = useSession();
-  const canCreate = !!org && role === 'admin';
+  const { org } = useSession();
+  const canCreate = !!org;
   const [mine, reload] = useAsync(() => api.myChampionships(), 'mine');
 
   return (
@@ -35,7 +35,7 @@ export function MyChampionships() {
               : 'Nenhum campeonato ainda. Quando sua equipe for inscrita, ele aparece aqui.'}
           </EmptyState>
         ) : (
-          <ChampionshipCards items={mine.data} label="Meus campeonatos" />
+          <ChampionshipList items={mine.data} label="Meus campeonatos" />
         ))}
     </div>
   );

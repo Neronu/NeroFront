@@ -113,9 +113,6 @@ export const api = {
   me: () => request<C.MeResponse>('GET', '/me'),
   createOrganization: (body: C.CreateOrganizationRequest) =>
     request<C.Organization>('POST', '/organizations', body),
-  members: (orgId: string) => request<C.Member[]>('GET', `/organizations/${orgId}/members`),
-  addMember: (orgId: string, body: C.AddMemberRequest) =>
-    request<C.Member>('POST', `/organizations/${orgId}/members`, body),
   // E6
   orgRules: (orgId: string, sportKey = 'basketball') =>
     request<C.SportRulesResponse>('GET', `/organizations/${orgId}/sports/${sportKey}/rules`),
@@ -178,7 +175,13 @@ export const api = {
   team: (id: string) => request<TeamDetail>('GET', `/teams/${id}`),
   createTeam: (body: CreateTeamRequest) => request<Team>('POST', '/teams', body),
   createAthlete: (body: CreateAthleteRequest) => request<Athlete>('POST', '/athletes', body),
-  matches: (orgId: string) => request<Match[]>('GET', `/matches${q({ organizationId: orgId })}`),
+  /** Partidas avulsas da entidade; `upcoming`: só as próximas n. */
+  matches: (orgId: string, upcoming?: number) =>
+    request<Match[]>(
+      'GET',
+      `/matches${q({ organizationId: orgId, ...(upcoming ? { upcoming: String(upcoming) } : {}) })}`,
+    ),
+  deleteMatch: (id: string) => request<void>('DELETE', `/matches/${id}`),
   createMatch: (body: CreateMatchRequest) => request<Match>('POST', '/matches', body),
   putRoster: (id: string, body: PutRosterRequest) =>
     request<MatchRoster>('PUT', `/matches/${id}/roster`, body),
@@ -216,10 +219,20 @@ export const api = {
   myTeamInvites: () => request<C.TeamInvite[]>('GET', '/me/team-invites'),
   acceptTeamInvite: (id: string) => request<C.MyTeam>('POST', `/team-invites/${id}/accept`),
   declineTeamInvite: (id: string) => request<void>('POST', `/team-invites/${id}/decline`),
+  // Link fixo de convite da equipe
+  teamInviteLink: (teamId: string) =>
+    request<C.TeamInviteLink>('GET', `/teams/${teamId}/invite-link`),
+  resetTeamInviteLink: (teamId: string) =>
+    request<C.TeamInviteLink>('POST', `/teams/${teamId}/invite-link`),
+  teamLink: (token: string) => request<C.TeamLinkPreview>('GET', `/team-links/${token}`),
+  joinTeamByLink: (token: string, body: C.JoinTeamRequest) =>
+    request<C.MyTeam>('POST', `/team-links/${token}/join`, body),
   // Admin da plataforma (consultas só leitura; `q` busca por nome, e-mail ou código)
   adminUsers: (search = '') => request<C.AdminUser[]>('GET', `/admin/users${q({ q: search })}`),
   adminOrganizations: (search = '') =>
     request<C.AdminOrganization[]>('GET', `/admin/organizations${q({ q: search })}`),
+  updateOrganizationAccount: (id: string, body: C.UpdateOrganizationAccountRequest) =>
+    request<C.AdminOrganization>('PATCH', `/admin/organizations/${id}`, body),
   adminChampionships: (search = '') =>
     request<C.AdminChampionship[]>('GET', `/admin/championships${q({ q: search })}`),
   // E11 — retificação

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
-import { Button, Card, Notice, PageHeader, TextField } from '../../components/ui';
+import { Button, Group, Notice, PageHeader, TextField } from '../../components/ui';
 import { api, errorMessage, HttpError } from '../../lib/api/client';
 import { useSession } from '../../lib/session';
 
@@ -37,7 +37,7 @@ export function Login() {
   return (
     <div className="ui-stack">
       <PageHeader title="Entrar" />
-      <Card>
+      <Group>
         <form onSubmit={submit} className="ui-form">
           <TextField
             label="E-mail"
@@ -79,7 +79,7 @@ export function Login() {
             Não tem conta? <Link to={`/cadastro?next=${encodeURIComponent(next)}`}>Crie uma</Link>
           </p>
         </form>
-      </Card>
+      </Group>
     </div>
   );
 }

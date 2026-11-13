@@ -81,6 +81,22 @@
   }
 }
 
+/* ─── Perfil: lateral (conta, aparência) + principal (dados de atleta) ──── */
+.pf-grid {
+  align-items: start;
+  row-gap: var(--space-8);
+}
+@media (min-width: 1024px) {
+  .pf-grid > .pf-main {
+    grid-row: 1;
+    grid-column: 1 / 9;
+  }
+  .pf-grid > .pf-aside {
+    grid-row: 1;
+    grid-column: 9 / -1;
+  }
+}
+
 /* ─── LayoutHome ───────────────────────────────────────────────────────── */
 .lyt-home {
   min-height: 100dvh;
@@ -111,8 +127,11 @@
 .lyt-painel__sidebar {
   display: none;
 }
+/* Só o ícone de 3 barras, em área de toque quadrada; o ícone alinha com a margem do texto. */
 .lyt-painel__menu-button {
-  margin-left: calc(-1 * var(--space-2));
+  min-width: var(--touch-min);
+  padding: 0;
+  margin-left: calc(-1 * var(--space-3));
 }
 @media (min-width: 1024px) {
   .lyt-painel {

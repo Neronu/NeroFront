@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, errorMessage } from '../lib/api/client';
 import type { TeamInvite } from '../lib/api/contract';
 import { useAsync } from '../lib/useAsync';
-import { Button, Card, Notice } from './ui';
+import { Button, Group, Notice } from './ui';
 
 /**
  * Convites para jogar em equipes, para o e-mail da conta. Aceitar faz da pessoa atleta da
@@ -43,7 +43,7 @@ export function TeamInvitesPanel({ onAccepted }: { onAccepted?(): void }) {
         </Notice>
       )}
       {invites.data.length > 0 && (
-        <Card>
+        <Group>
           <ul className="ui-list" aria-labelledby="team-invites">
             {invites.data.map((i) => (
               <li key={i.id}>
@@ -72,7 +72,7 @@ export function TeamInvitesPanel({ onAccepted }: { onAccepted?(): void }) {
               </li>
             ))}
           </ul>
-        </Card>
+        </Group>
       )}
     </section>
   );

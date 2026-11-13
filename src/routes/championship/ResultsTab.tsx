@@ -7,7 +7,7 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import {
   Button,
-  Card,
+  Group,
   EmptyState,
   ErrorState,
   LiveBadge,
@@ -17,10 +17,17 @@ import {
   TextField,
 } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
-import { dayKey, dayLabel, timeLabel } from '../../lib/format';
+import {
+  CHAMPIONSHIP_FORMATS,
+  championshipFormatName,
+  dayKey,
+  dayLabel,
+  timeLabel,
+} from '../../lib/format';
 import { useSession } from '../../lib/session';
 import { useAsync } from '../../lib/useAsync';
-import { matchLink } from '../Home';
+import { usePolling } from '../../lib/usePolling';
+import { matchLink } from '../../components/MatchList';
 
 /** Agrupa por dia (no fuso do aparelho), em ordem; jogos sem data vão para o fim. */
 export function groupByDay(matches: ChampionshipMatch[]): [string | null, ChampionshipMatch[]][] {
@@ -38,12 +45,20 @@ export function groupByDay(matches: ChampionshipMatch[]): [string | null, Champi
   return [...byDay];
 }
 
-/** Aba Resultados: lista limpa de jogos por data. O único elemento colorido é o selo "Ao vivo". */
+/** Intervalo da atualização dos placares enquanto houver jogo ao vivo. */
+export const LIVE_REFRESH_MS = 5_000;
+
+/**
+ * Aba Resultados: lista limpa de jogos por data. O único elemento colorido é o selo "Ao vivo".
+ * Com jogo em andamento, os placares se atualizam sozinhos; relógio e posse ficam só na mesa.
+ */
 export function ResultsTab({ ch, onChange }: { ch: ChampionshipDetail; onChange: () => void }) {
   const [matches, reload] = useAsync(() => api.championshipMatches(ch.id), ch.id);
-  const { me } = useSession();
-  // Membros da organizadora (administradores e mesários) anotam os jogos.
-  const canScore = (me?.memberships ?? []).some((m) => m.organization.id === ch.organizer.id);
+  const live = matches.status === 'ok' && matches.data.some((m) => m.status === 'in_progress');
+  usePolling(reload, LIVE_REFRESH_MS, live);
+  const { organizations } = useSession();
+  // A atlética organizadora anota os jogos.
+  const canScore = organizations.some((o) => o.id === ch.organizer.id);
 
   return (
     <div className="ui-stack ui-stack--section">
@@ -155,7 +170,10 @@ function Game({ m, canScore }: { m: ChampionshipMatch; canScore: boolean }) {
 }
 
 function Generate({ ch, onDone }: { ch: ChampionshipDetail; onDone: () => void }) {
-  const [format, setFormat] = useState<GenerateScheduleRequest['format']>('groups_knockout');
+  // Campeonatos criados antes do formato existir ainda escolhem aqui.
+  const [format, setFormat] = useState<GenerateScheduleRequest['format']>(
+    ch.format ?? 'groups_knockout',
+  );
   const [groups, setGroups] = useState(2);
   const [qualifiers, setQualifiers] = useState(2);
   const [doubleRound, setDoubleRound] = useState(false);
@@ -180,21 +198,29 @@ function Generate({ ch, onDone }: { ch: ChampionshipDetail; onDone: () => void }
   };
 
   return (
-    <Card>
+    <Group>
       <form onSubmit={submit} className="ui-form">
         <h3>Montar a tabela</h3>
         <p className="t-small t-muted">
           Usa as inscrições aprovadas. Depois de gerada, as inscrições se encerram.
         </p>
-        <SelectField
-          label="Formato"
-          value={format}
-          onChange={(e) => setFormat(e.target.value as typeof format)}
-        >
-          <option value="groups_knockout">Grupos + mata-mata</option>
-          <option value="round_robin">Pontos corridos</option>
-          <option value="knockout">Mata-mata</option>
-        </SelectField>
+        {ch.format ? (
+          <p className="t-small">
+            Formato da disputa: <strong>{championshipFormatName(ch.format)}</strong>
+          </p>
+        ) : (
+          <SelectField
+            label="Formato"
+            value={format}
+            onChange={(e) => setFormat(e.target.value as typeof format)}
+          >
+            {CHAMPIONSHIP_FORMATS.map((f) => (
+              <option key={f} value={f}>
+                {championshipFormatName(f)}
+              </option>
+            ))}
+          </SelectField>
+        )}
         {format === 'groups_knockout' && (
           <div className="ui-form-row">
             <TextField
@@ -233,6 +259,6 @@ function Generate({ ch, onDone }: { ch: ChampionshipDetail; onDone: () => void }
           </Button>
         </div>
       </form>
-    </Card>
+    </Group>
   );
 }

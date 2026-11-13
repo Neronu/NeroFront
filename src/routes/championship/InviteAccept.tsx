@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
   Button,
-  Card,
+  Group,
   ErrorState,
   Notice,
   PageHeader,
@@ -16,12 +16,12 @@ import { useAsync } from '../../lib/useAsync';
 /** Destino do link de convite: a entidade convidada aceita participar. */
 export function InviteAccept() {
   const { token = '' } = useParams();
-  const { me, refresh, personalOrg } = useSession();
+  const { organizations, refresh, personalOrg } = useSession();
   const [invite] = useAsync(() => api.invite(token), token);
-  // Atléticas que administra e, se tiver, a entidade pessoal (equipes criadas pelo atleta).
+  // Atléticas da conta e, se tiver, a entidade pessoal (equipes criadas pelo atleta).
   const admins = [
-    ...(me?.memberships ?? []).filter((m) => m.role === 'admin' && !m.organization.isGuest),
-    ...(personalOrg ? [{ organization: personalOrg, role: 'admin' as const }] : []),
+    ...organizations.filter((o) => !o.isGuest).map((organization) => ({ organization })),
+    ...(personalOrg ? [{ organization: personalOrg }] : []),
   ];
   const label = (o: { name: string; isPersonal?: boolean }) =>
     o.isPersonal ? 'suas equipes' : o.name;
@@ -51,7 +51,7 @@ export function InviteAccept() {
   return (
     <div className="ui-stack">
       <PageHeader eyebrow="Convite" title={championship.name} />
-      <Card className="ui-stack">
+      <Group className="ui-stack">
         <p>
           A <strong>{organizer.name}</strong> convidou sua entidade para o campeonato.
         </p>
@@ -83,7 +83,7 @@ export function InviteAccept() {
             </Button>
           </>
         )}
-      </Card>
+      </Group>
     </div>
   );
 }

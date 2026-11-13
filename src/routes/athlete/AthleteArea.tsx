@@ -5,6 +5,7 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  Group,
   Notice,
   Skeleton,
   TabPanel,
@@ -48,30 +49,32 @@ export function AthleteArea() {
   const orgs = [...new Set(links.map((a) => a.organization.name))];
 
   return (
-    <section className="ui-stack ui-stack--section" aria-labelledby="athlete-area">
-      <div className="ui-stack">
+    <section className="ui-stack" aria-labelledby="athlete-area">
+      <div className="ui-stack ui-stack--tight">
         <h2 id="athlete-area">Dados de atleta</h2>
         {orgs.length > 0 && <p className="t-small t-muted">Cadastros ligados: {orgs.join(', ')}</p>}
       </div>
-      {links.length === 0 ? (
-        <EmptyState>
-          Nenhum cadastro de atleta ligado à sua conta. Quando uma atlética cadastrar você com o
-          e-mail {me?.user.email}, seus campeonatos e estatísticas aparecem aqui.
-        </EmptyState>
-      ) : (
-        <div className="ui-stack">
-          <Tabs
-            label="Seções da área do atleta"
-            idPrefix="atl"
-            items={TABS}
-            value={tab}
-            onChange={(t) => setParams({ aba: t }, { replace: true })}
-          />
-          <TabPanel tabKey={tab} idPrefix="atl">
-            {tab === 'campeonatos' ? <Championships /> : <Stats />}
-          </TabPanel>
-        </div>
-      )}
+      <Group as="div">
+        {links.length === 0 ? (
+          <EmptyState>
+            Nenhum cadastro de atleta ligado à sua conta. Quando uma atlética cadastrar você com o
+            e-mail {me?.user.email}, seus campeonatos e estatísticas aparecem aqui.
+          </EmptyState>
+        ) : (
+          <div className="ui-stack">
+            <Tabs
+              label="Seções da área do atleta"
+              idPrefix="atl"
+              items={TABS}
+              value={tab}
+              onChange={(t) => setParams({ aba: t }, { replace: true })}
+            />
+            <TabPanel tabKey={tab} idPrefix="atl">
+              {tab === 'campeonatos' ? <Championships /> : <Stats />}
+            </TabPanel>
+          </div>
+        )}
+      </Group>
     </section>
   );
 }
@@ -118,7 +121,7 @@ function ChampionshipGroup({
   if (items.length === 0) return null;
   return (
     <section className="ui-stack" aria-labelledby={id}>
-      <h2 id={id}>{title}</h2>
+      <h3 id={id}>{title}</h3>
       <ul className="ui-list" aria-labelledby={id}>
         {items.map((a) => (
           <li key={`${a.championship.id}-${a.athleteId}`}>
@@ -170,7 +173,7 @@ function Stats() {
     <div className="ui-stack ui-stack--section">
       {sports.map((s) => (
         <section className="ui-stack" key={s.sportKey} aria-labelledby={`atl-sport-${s.sportKey}`}>
-          <h2 id={`atl-sport-${s.sportKey}`}>{s.sportName}</h2>
+          <h3 id={`atl-sport-${s.sportKey}`}>{s.sportName}</h3>
           <SportStatsTable sport={s} />
         </section>
       ))}

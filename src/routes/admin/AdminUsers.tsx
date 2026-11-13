@@ -11,8 +11,6 @@ import { formatDateTime } from '../../lib/dates';
 import { useAsync } from '../../lib/useAsync';
 import { useSearchParam } from './useSearchParam';
 
-const ROLE = { admin: 'admin', scorer: 'mesário' } as const;
-
 /** Usuários do sistema (admin da plataforma), só leitura. Todo usuário é atleta. */
 export function AdminUsers() {
   const { input, setInput, query } = useSearchParam();
@@ -51,7 +49,7 @@ export function AdminUsers() {
                 render: (u) =>
                   [
                     'Atleta',
-                    ...u.memberships.map((m) => `${m.organization.name} (${ROLE[m.role]})`),
+                    ...u.organizations.map((o) => `Atlética: ${o.name}`),
                     u.isSystemAdmin && 'Admin da plataforma',
                   ]
                     .filter(Boolean)

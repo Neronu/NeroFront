@@ -1,16 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { Button, Card, Notice, PageHeader, TextField } from '../../components/ui';
+import { Button, Group, Notice, PageHeader, TextField } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api/client';
 import { PublicationConsentCheck } from '../org/PublicationConsent';
 
 /**
- * Cadastro de atlética (admin da plataforma). O responsável entra como administrador; se ainda
- * não tem conta, recebe um convite por e-mail e entra ao se cadastrar com esse e-mail.
+ * Cadastro de atlética (admin da plataforma). A atlética é um e-mail: quem entra com ele gerencia
+ * a atlética. Sem conta, a pessoa recebe um e-mail para se cadastrar com esse endereço.
  */
 export function NewOrganization() {
   const [name, setName] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
+  const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -23,12 +23,12 @@ export function NewOrganization() {
     try {
       const org = await api.createOrganization({
         name,
-        adminEmail: adminEmail.trim(),
+        email: email.trim(),
         publicationConsent: consent,
       });
       navigate('/admin/atleticas', {
         state: {
-          created: `${org.name} cadastrada. ${adminEmail.trim()} é o responsável (quem ainda não tem conta recebe um convite por e-mail).`,
+          created: `${org.name} cadastrada com o e-mail ${email.trim()}. Sem conta, a pessoa recebe um e-mail para se cadastrar.`,
         },
       });
     } catch (err) {
@@ -42,9 +42,9 @@ export function NewOrganization() {
       <PageHeader
         eyebrow="Administração"
         title="Nova atlética"
-        meta="A atlética, clube ou liga. O responsável administra cadastros, regras, campeonatos e membros."
+        meta="A atlética, clube ou liga. Quem entra com o e-mail da atlética gerencia cadastros, regras, campeonatos e partidas."
       />
-      <Card>
+      <Group>
         <form onSubmit={submit} className="ui-form">
           <TextField
             label="Nome"
@@ -54,11 +54,11 @@ export function NewOrganization() {
             required
           />
           <TextField
-            label="E-mail do responsável"
+            label="E-mail da atlética"
             type="email"
-            help="Vira administrador(a) da atlética. Sem conta, recebe um convite por e-mail."
-            value={adminEmail}
-            onChange={(e) => setAdminEmail(e.target.value)}
+            help="Um único e-mail por atlética. Sem conta, recebe um e-mail para se cadastrar."
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
           <PublicationConsentCheck checked={consent} onChange={setConsent} />
@@ -67,7 +67,7 @@ export function NewOrganization() {
             Cadastrar atlética
           </Button>
         </form>
-      </Card>
+      </Group>
     </div>
   );
 }

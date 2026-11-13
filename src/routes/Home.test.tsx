@@ -18,7 +18,6 @@ vi.mock('../lib/api/client', async (orig) => ({
 const session = vi.hoisted(() => ({
   current: {
     org: { id: 'o1', name: 'Atlética', slug: 'atletica', isGuest: false } as object | null,
-    role: 'admin' as string | null,
   },
 }));
 vi.mock('../lib/session', () => ({ useSession: () => session.current }));
@@ -46,7 +45,7 @@ beforeEach(() => {
 });
 
 it('atlética: busca por código, campeonatos em andamento e partidas avulsas', async () => {
-  session.current = { ...session.current, role: 'admin' };
+  session.current = { ...session.current };
   api.myChampionships.mockResolvedValue([
     champ({ live: true }),
     champ({ id: 'c2', name: 'Torneio dos Calouros', slug: 'tdc', status: 'registration' }),
@@ -67,11 +66,18 @@ it('atlética: busca por código, campeonatos em andamento e partidas avulsas', 
     'href',
     '/campeonatos',
   );
-  expect(await screen.findByText(/Nenhuma partida avulsa/)).toBeInTheDocument();
+  expect(await screen.findByText('Nenhuma partida avulsa marcada.')).toBeInTheDocument();
+  // Só as próximas 3; criar e excluir ficam em Partidas.
+  expect(api.matches).toHaveBeenCalledWith('o1', 3);
+  expect(screen.queryByRole('link', { name: 'Nova partida' })).toBeNull();
+  expect(screen.getByRole('link', { name: 'Ver todas as partidas' })).toHaveAttribute(
+    'href',
+    '/partidas',
+  );
 });
 
 it('atleta: aceita convite de equipe na Home', async () => {
-  session.current = { org: null, role: null };
+  session.current = { org: null };
   api.myChampionships.mockResolvedValue([]);
   api.myTeamInvites.mockResolvedValue([
     {
