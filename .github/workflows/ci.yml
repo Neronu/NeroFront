@@ -27,7 +27,7 @@ jobs:
           # PAT com read:packages, cadastrado em Settings → Secrets → Actions.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Pacotes @neronu não podem estar linkados localmente
-        run: '! grep -E ''"@neronu/[^"]+": "(link|file):'' package.json'
+        run: '! grep -nE ''(link|file):'' package.json pnpm-workspace.yaml'
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm test
