@@ -34,7 +34,7 @@ export function MatchList({
   onDelete?: (m: Match) => void;
 }) {
   return (
-    <ul className="ui-list" aria-label={label}>
+    <ul className="ui-list match-list" aria-label={label}>
       {items.map((m) => (
         <li key={m.id}>
           <span className="ui-list__main">

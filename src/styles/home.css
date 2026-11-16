@@ -68,6 +68,10 @@
 .my-champs > li + li {
   border-top: 1px solid var(--line);
 }
+/* O hover no ::after esticado conta como hover no link: pinta a célula inteira. */
+.my-champs > li:has(.my-champ__name a:hover) {
+  background: var(--surface-sunken);
+}
 .my-champ {
   position: relative;
   display: flex;

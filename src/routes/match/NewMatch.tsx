@@ -71,44 +71,46 @@ export function NewMatch() {
       {header}
       <Group>
         <form onSubmit={create} className="ui-form">
-          {SPORTS.length > 1 && (
+          <div className="ui-form-grid">
+            {SPORTS.length > 1 && (
+              <SelectField
+                label="Esporte"
+                value={sportKey}
+                onChange={(e) => setSportKey(e.target.value)}
+              >
+                {SPORTS.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.name}
+                  </option>
+                ))}
+              </SelectField>
+            )}
+            <TextField
+              label="Local (opcional)"
+              value={venue}
+              onChange={(e) => setVenue(e.target.value)}
+              placeholder="Ginásio da UFMT"
+            />
             <SelectField
-              label="Esporte"
-              value={sportKey}
-              onChange={(e) => setSportKey(e.target.value)}
+              label="Mandante (A)"
+              value={home}
+              onChange={(e) => setHome(e.target.value)}
+              required
             >
-              {SPORTS.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {s.name}
-                </option>
-              ))}
+              <option value="">Escolha…</option>
+              {options}
             </SelectField>
-          )}
-          <SelectField
-            label="Mandante (A)"
-            value={home}
-            onChange={(e) => setHome(e.target.value)}
-            required
-          >
-            <option value="">Escolha…</option>
-            {options}
-          </SelectField>
-          <SelectField
-            label="Visitante (B)"
-            value={away}
-            onChange={(e) => setAway(e.target.value)}
-            error={home && home === away ? 'Escolha duas equipes diferentes.' : undefined}
-            required
-          >
-            <option value="">Escolha…</option>
-            {options}
-          </SelectField>
-          <TextField
-            label="Local (opcional)"
-            value={venue}
-            onChange={(e) => setVenue(e.target.value)}
-            placeholder="Ginásio da UFMT"
-          />
+            <SelectField
+              label="Visitante (B)"
+              value={away}
+              onChange={(e) => setAway(e.target.value)}
+              error={home && home === away ? 'Escolha duas equipes diferentes.' : undefined}
+              required
+            >
+              <option value="">Escolha…</option>
+              {options}
+            </SelectField>
+          </div>
           <p className="t-small t-muted">
             A partida usa as <Link to="/regras">regras da entidade</Link>.
           </p>

@@ -211,7 +211,10 @@
   justify-content: space-between;
   gap: var(--space-4);
 }
+/* Ocupa o espaço livre (os metadados em linha precisam de largura); as ações só descem
+   para baixo do título quando não sobram ~320px. */
 .ui-page-header__titles {
+  flex: 1 1 320px;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -229,21 +232,23 @@
   margin-top: var(--space-2);
 }
 
-/* ─── Metadados em grid (rótulo/valor) ────────────────────────────────── */
+/* ─── Metadados (rótulo/valor) ─────────────────────────────────────────── */
+/* Em linha, cada item com a largura do valor; quebra entre itens, não dentro do valor. */
 .ui-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3) var(--space-6);
   margin: 0;
 }
 .ui-meta-grid--single {
-  grid-template-columns: minmax(0, 1fr);
+  flex-direction: column;
 }
 .ui-meta-grid__item {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  max-width: 100%;
 }
 .ui-meta-grid__label {
   color: var(--muted);
@@ -589,6 +594,18 @@
 .ui-form-row > .ui-field--num {
   flex: 0 0 88px;
 }
+/* Campos em grade 2×2; uma coluna no celular. Alinha pelos rótulos, como --top. */
+.ui-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-4) var(--space-3);
+}
+@media (max-width: 479.98px) {
+  .ui-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
 /* Barra de salvar: fixa no rodapé no celular, em linha no desktop. */
 .ui-savebar {
@@ -763,8 +780,31 @@
   }
 }
 
-/* Lixo na linha da lista de partidas: só o ícone, alvo de toque mínimo. */
+/* Lista de partidas: a linha inteira é clicável, mas o link continua sendo o confronto. */
+.match-list > li {
+  position: relative;
+}
+.match-list > li:has(.ui-list__title:hover) {
+  background: var(--surface-sunken);
+}
+.match-list .ui-list__title::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.match-list .ui-list__title:focus-visible {
+  outline: none;
+}
+.match-list .ui-list__title:focus-visible::after {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Lixo na linha da lista de partidas: só o ícone, alvo de toque mínimo. Fica acima da área
+   clicável da linha: exclui sem abrir a partida. */
 .match-list__delete {
+  position: relative;
+  z-index: 1;
   min-width: var(--touch-min);
   padding-inline: 0;
   color: var(--muted);

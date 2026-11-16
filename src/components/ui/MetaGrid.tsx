@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 export type MetaItem = { label: string; value: ReactNode };
 
 /**
- * Pares rótulo/valor em grid (ex.: metadados no PageHeader).
- * Colunas se ajustam à largura; itens sem valor são omitidos.
+ * Pares rótulo/valor (ex.: metadados no PageHeader).
+ * Itens em linha, quebram para a linha seguinte quando não cabem; itens sem valor são omitidos.
  */
 export function MetaGrid({
   items,
