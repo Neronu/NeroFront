@@ -2,12 +2,13 @@ import { isVoidEvent, voidedIds } from '@neronu/sport-core';
 import { RotateCw } from 'lucide-react';
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
-import { Button, ErrorState, Icon, Skeleton } from '../../components/ui';
+import { Button, ErrorState, Icon, Overlay, Skeleton } from '../../components/ui';
 import {
   clockExpired,
   clockStopPayload,
   sportTable,
   type MomentAction as SportMoment,
+  type MomentForm,
   type TableClock,
   type TablePlayer,
   type Who,
@@ -16,9 +17,11 @@ import type { Draft, TableEvent } from '../../lib/match/table';
 import { useMatchTable } from '../../lib/match/useMatchTable';
 import { useShotClock } from '../../lib/match/useShotClock';
 import { useTick } from '../../lib/match/useTick';
+import { MomentFormSheet } from './sumula/MomentFormSheet';
 import { MoreSheet } from './sumula/MoreSheet';
 import { SumulaFooter } from './sumula/SumulaFooter';
 import { ClockControl, ShotClockControl, SumulaTop, SyncButton } from './sumula/SumulaTop';
+import { SubstitutionSheet } from './sumula/SubstitutionSheet';
 import { TeamColumn } from './sumula/TeamColumn';
 import { FRAME_H, FRAME_W, useFrameFit } from './sumula/useFrameFit';
 
@@ -46,19 +49,24 @@ export function TablePage() {
   const [alert, setAlert] = useState('');
   const [more, setMore] = useState(false);
 
+  const [rowMenu, setRowMenu] = useState<TablePlayer | null>(null);
+  const [subSide, setSubSide] = useState<Side | null>(null);
+  const [form, setForm] = useState<MomentForm | null>(null);
+
   // Relógio: lido no render a partir do estado; renderiza a cada 100 ms só enquanto corre.
-  const runningSince = snapshot?.state.clock?.runningSince ?? null;
+  const ui = snapshot ? sportTable(snapshot.sport.key) : null;
+  const runningSince = snapshot && ui ? ui.clockSince(snapshot.state) : null;
   useTick(!!runningSince);
   const sportKey = snapshot?.sport.key;
-  const clock = snapshot ? sportTable(snapshot.sport.key).clock(snapshot.state, new Date()) : null;
+  const clock = snapshot && ui ? ui.clock(snapshot.state, new Date()) : null;
   const closedMatch = snapshot?.server.match.status === 'closed';
 
   // Posse: só na mesa, corre com o relógio de jogo. Ao zerar, avisa uma vez até o reinício.
   const shot = useShotClock(
     id,
-    sportKey ? sportTable(sportKey).shotClock : null,
+    ui?.shotClock ?? null,
     closedMatch ? null : clock,
-    snapshot?.state.period ?? 0,
+    snapshot && ui ? ui.period(snapshot.state) : 0,
   );
   const shotExpired = !!shot && !shot.off && shot.remainingMs === 0;
   const shotWarned = useRef(false);
@@ -94,16 +102,18 @@ export function TablePage() {
     stopAtZero();
   }, [runningSince, expired, closedMatch]);
 
+  const overlayOpen = more || !!rowMenu || !!subSide || !!form;
+
   // Barra de espaço alterna o relógio (mesa com notebook).
   const onSpace = useEffectEvent((e: KeyboardEvent) => {
-    if (!clock || expired || closedMatch || more || ownsSpace(e.target)) return;
+    if (!clock || expired || closedMatch || overlayOpen || ownsSpace(e.target)) return;
     e.preventDefault();
     toggleClock(clock);
   });
   // R reinicia a posse cheia; T, o segundo reinício (14s no 5x5).
   const onShotKey = useEffectEvent((e: KeyboardEvent, index: number) => {
-    if (!shot || !sportKey || more || ownsSpace(e.target)) return;
-    const ms = sportTable(sportKey).shotClock.resets[index];
+    if (!shot || !sportKey || overlayOpen || ownsSpace(e.target)) return;
+    const ms = sportTable(sportKey).shotClock?.resets[index];
     if (ms === undefined) return;
     e.preventDefault();
     shot.reset(ms);
@@ -170,7 +180,7 @@ export function TablePage() {
     (side === 'home' ? server.match.homeTeam : server.match.awayTeam).name;
   const nameOf = (athleteId: string) => names.get(athleteId)?.name ?? '';
   const closed = server.match.status === 'closed';
-  const canRecord = !closed && state.status === 'in_period';
+  const canRecord = !closed && sport.live(state);
 
   /** Lança e mostra o resultado na hora; erro vira faixa danger com texto. */
   const send = (draft: Draft): boolean => {
@@ -192,11 +202,12 @@ export function TablePage() {
     .reverse()
     .find((e) => !isVoidEvent(e) && !voided.has(e.id) && !CLOCK_EVENTS.has(e.type));
   const pendingIds = new Set(snapshot.pending.map((e) => e.id));
+  // Quem está em quadra primeiro (vôlei); depois, por número.
+  const players = sport.players(state);
   const playersOf = (side: Side): TablePlayer[] =>
-    sport
-      .players(state)
+    players
       .filter((p) => p.side === side)
-      .sort((a, b) => a.number - b.number);
+      .sort((a, b) => Number(!!b.onCourt) - Number(!!a.onCourt) || a.number - b.number);
 
   const banners: ReactNode[] = [];
   if (snapshot.sync === 'offline' || snapshot.sync === 'unauthorized') {
@@ -231,7 +242,19 @@ export function TablePage() {
       </div>,
     );
   }
-  const moment = closed ? null : sport.moment(state);
+  const athletesOf = (side: Side) =>
+    server.roster[side].roster
+      .filter((r) => players.find((p) => p.athleteId === r.athleteId)?.status === 'active')
+      .map((r) => ({ id: r.athleteId, label: `#${r.number} ${r.name}` }));
+  const moment = closed ? null : sport.moment(state, teamName, athletesOf);
+  const notice = closed ? null : (sport.notice?.(state) ?? null);
+  if (notice) {
+    banners.push(
+      <div className="sm-banner" role="status" key="notice">
+        <span>{notice}</span>
+      </div>,
+    );
+  }
   if (expired && !closed) {
     banners.push(
       <div className="sm-banner" role="alert" key="clock">
@@ -242,17 +265,14 @@ export function TablePage() {
       </div>,
     );
   }
-  if (shotExpired && !closed) {
+  if (shotExpired && !closed && sport.shotClock) {
+    const { durationMs } = sport.shotClock;
     banners.push(
       <div className="sm-banner" role="alert" key="shot">
         <span>Estouro do tempo de posse. Reinicie a posse.</span>
-        <button
-          type="button"
-          className="sm-banner__action"
-          onClick={() => shot?.reset(sport.shotClock.durationMs)}
-        >
+        <button type="button" className="sm-banner__action" onClick={() => shot?.reset(durationMs)}>
           <Icon icon={RotateCw} />
-          Reiniciar {Math.round(sport.shotClock.durationMs / 1000)}s
+          Reiniciar {Math.round(durationMs / 1000)}s
         </button>
       </div>,
     );
@@ -290,7 +310,8 @@ export function TablePage() {
               )
             }
             shotClock={
-              shot && (
+              shot &&
+              sport.shotClock && (
                 <ShotClockControl shot={shot} resets={sport.shotClock.resets} disabled={closed} />
               )
             }
@@ -302,12 +323,17 @@ export function TablePage() {
                 side={side}
                 teamName={teamName(side)}
                 players={playersOf(side)}
+                columns={sport.playerColumns}
                 scoreButtons={sport.scoreButtons}
+                rowAction={sport.rowAction}
+                state={state}
                 nameOf={nameOf}
                 disabled={!canRecord}
                 onScore={(p, b) => send(b.draft(p.athleteId))}
-                onFoul={(p) =>
-                  send({ type: 'foul', payload: { athleteId: p.athleteId, kind: 'personal' } })
+                onRowAction={(p) =>
+                  'draft' in sport.rowAction
+                    ? send(sport.rowAction.draft(p.athleteId))
+                    : setRowMenu(p)
                 }
               />
             ))}
@@ -327,6 +353,7 @@ export function TablePage() {
                 closed={closed}
                 moment={moment}
                 expired={expired}
+                onForm={setForm}
               />
             }
           />
@@ -345,7 +372,50 @@ export function TablePage() {
         send={send}
         describe={describe}
         onVoid={voidEvent}
+        onPicker={(side) => {
+          // Só há um seletor de equipe por enquanto: a substituição.
+          setMore(false);
+          setSubSide(side);
+        }}
       />
+      {'options' in sport.rowAction && (
+        <Overlay
+          open={!!rowMenu}
+          onClose={() => setRowMenu(null)}
+          title={
+            rowMenu
+              ? `${sport.rowAction.label} · #${rowMenu.number} ${nameOf(rowMenu.athleteId)}`
+              : sport.rowAction.label
+          }
+        >
+          <div className="ui-stack">
+            {rowMenu &&
+              sport.rowAction.options.map((o) => (
+                <Button
+                  key={o.key}
+                  variant="secondary"
+                  disabled={!canRecord || (o.enabled ? !o.enabled(state, rowMenu) : false)}
+                  onClick={() => send(o.draft(rowMenu.athleteId)) && setRowMenu(null)}
+                >
+                  {o.label}
+                </Button>
+              ))}
+          </div>
+        </Overlay>
+      )}
+      {form && <MomentFormSheet form={form} onClose={() => setForm(null)} send={send} />}
+      {subSide && (
+        <SubstitutionSheet
+          open
+          onClose={() => setSubSide(null)}
+          side={subSide}
+          teamName={teamName(subSide)}
+          players={playersOf(subSide)}
+          nameOf={nameOf}
+          left={sport.teamActions(state, subSide).find((a) => a.picker === 'substitution')?.label}
+          send={send}
+        />
+      )}
     </div>
   );
 }
@@ -360,12 +430,14 @@ function MomentAction({
   closed,
   expired,
   send,
+  onForm,
 }: {
   matchId: string;
   moment: SportMoment | null;
   closed: boolean;
   expired: boolean;
   send: (draft: Draft) => boolean;
+  onForm: (form: MomentForm) => void;
 }) {
   const conferencia = `/partidas/${matchId}/conferencia`;
   if (closed) {
@@ -382,7 +454,14 @@ function MomentAction({
       </Link>
     );
   }
-  const { draft } = moment;
+  const { draft, form } = moment;
+  if (form) {
+    return (
+      <button type="button" className="sm-btn sm-btn--primary" onClick={() => onForm(form)}>
+        {moment.label}
+      </button>
+    );
+  }
   const question = expired ? undefined : moment.confirm;
   return (
     <button

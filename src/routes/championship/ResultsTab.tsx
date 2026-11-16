@@ -153,8 +153,13 @@ function Game({ m, canScore }: { m: ChampionshipMatch; canScore: boolean }) {
             ))}
           </tbody>
         </table>
-        {/* Pontos por período e cestinha de cada equipe entram quando o contrato trouxer. */}
+        {/* Cestinha de cada equipe entra quando o contrato trouxer. */}
         <div className="ch-game__side">
+          {hasScore && m.periodScores && m.periodScores.length > 0 && (
+            <span className="ch-game__periods" title="Parciais">
+              {m.periodScores.map((p) => `${p.home}–${p.away}`).join(', ')}
+            </span>
+          )}
           {!scheduled && m.scheduledAt && (
             <span className="ch-game__when">{timeLabel(m.scheduledAt)}</span>
           )}

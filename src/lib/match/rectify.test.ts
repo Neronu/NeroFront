@@ -5,6 +5,10 @@ import { sportOf } from '../sports';
 import { applyChanges, previewRectification } from './rectify';
 import type { TableEvent } from './table';
 
+/** Placar dos basquetes (os testes daqui só jogam basquete). */
+const scoreOf = (state: unknown) =>
+  (state as { teams: Record<'home' | 'away', { score: number }> }).teams;
+
 const side = (p: string, teamId: string) => ({
   teamId,
   roster: Array.from({ length: 5 }, (_, i) => ({
@@ -59,8 +63,8 @@ describe('retificação', () => {
     ]);
     expect(preview.ok).toBe(true);
     if (preview.ok) {
-      expect(preview.state.teams.home.score).toBe(3);
-      expect(preview.state.teams.away.score).toBe(5);
+      expect(scoreOf(preview.state).home.score).toBe(3);
+      expect(scoreOf(preview.state).away.score).toBe(5);
     }
   });
 

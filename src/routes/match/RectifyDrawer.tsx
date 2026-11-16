@@ -5,7 +5,12 @@ import { api, errorMessage } from '../../lib/api/client';
 import type { RectifyChange } from '../../lib/api/contract';
 import { sportTable, type Who } from '../../lib/match/sport-table';
 import { previewRectification } from '../../lib/match/rectify';
-import { newEventId, type TableEvent, type TableSnapshot } from '../../lib/match/table';
+import {
+  newEventId,
+  type SportState,
+  type TableEvent,
+  type TableSnapshot,
+} from '../../lib/match/table';
 
 type Side = 'home' | 'away';
 
@@ -48,6 +53,8 @@ export function RectifyDrawer({
     return m;
   }, [server]);
   const describe = (e: TableEvent) => sport.describe(e, (id) => who.get(id), teamName, state);
+  // Placar principal do módulo: pontos no basquete, sets no vôlei.
+  const scoreOf = (s: SportState) => snapshot.sport.module.summary(s).score;
 
   const events = useMemo(() => effectiveEvents(confirmed), [confirmed]);
   const voided = new Set(changes.flatMap((c) => (c.op === 'void' ? [c.targetId] : [])));
@@ -70,7 +77,10 @@ export function RectifyDrawer({
       {
         op: 'add',
         afterEventId: anchor || null,
-        event: { id: newEventId(), ...actions.find((a) => a.key === action)!.event(athleteId) },
+        event: {
+          id: newEventId(),
+          ...actions.find((a) => a.key === action)!.event(athleteId, who.get(athleteId)!.side),
+        },
       },
     ]);
   };
@@ -134,9 +144,9 @@ export function RectifyDrawer({
           {preview?.ok && (
             <Notice tone="ink" role="status">
               Novo placar: {teamName('home')}{' '}
-              <span className="t-stat">{preview.state.teams.home.score}</span> ×{' '}
-              <span className="t-stat">{preview.state.teams.away.score}</span> {teamName('away')}{' '}
-              (antes {state.teams.home.score} × {state.teams.away.score})
+              <span className="t-stat">{scoreOf(preview.state).home}</span> ×{' '}
+              <span className="t-stat">{scoreOf(preview.state).away}</span> {teamName('away')}{' '}
+              (antes {scoreOf(state).home} × {scoreOf(state).away})
             </Notice>
           )}
           {preview && !preview.ok && (

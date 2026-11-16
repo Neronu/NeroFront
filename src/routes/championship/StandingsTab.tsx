@@ -73,8 +73,64 @@ const COLUMNS_3X3: Column<StandingRow>[] = [
   },
 ];
 
+const ratio = new Intl.NumberFormat('pt-BR', {
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3,
+});
+
+/** Razão a/b; sem nada contra, "MAX" (como na tabela da FIVB). */
+export function formatRatio(a: number, b: number): string {
+  if (b === 0) return a > 0 ? 'MAX' : '—';
+  return ratio.format(a / b);
+}
+
+const setsWon = (r: StandingRow) => r.extra?.['setsWon'] ?? 0;
+const setsLost = (r: StandingRow) => r.extra?.['setsLost'] ?? 0;
+
+/**
+ * Vôlei (critério FIVB): pontos de classificação, vitórias, razão de sets e razão de pontos.
+ * Pontos feitos e sofridos são pontos disputados nos ralis; os sets vêm em `extra`.
+ */
+const COLUMNS_VOLLEYBALL: Column<StandingRow>[] = [
+  ...LEAD,
+  { key: 'points', header: 'P', title: 'Pontos', numeric: true, render: (r) => r.points },
+  { key: 'played', header: 'J', title: 'Jogos', numeric: true, render: (r) => r.played },
+  { key: 'won', header: 'V', title: 'Vitórias', numeric: true, render: (r) => r.won },
+  { key: 'lost', header: 'D', title: 'Derrotas', numeric: true, render: (r) => r.lost },
+  { key: 'sw', header: 'SV', title: 'Sets vencidos', numeric: true, render: setsWon },
+  { key: 'sl', header: 'SP', title: 'Sets perdidos', numeric: true, render: setsLost },
+  {
+    key: 'sr',
+    header: 'Sets',
+    title: 'Razão de sets (vencidos ÷ perdidos)',
+    numeric: true,
+    render: (r) => formatRatio(setsWon(r), setsLost(r)),
+  },
+  { key: 'pf', header: 'PF', title: 'Pontos feitos', numeric: true, render: (r) => r.pointsFor },
+  {
+    key: 'pc',
+    header: 'PC',
+    title: 'Pontos sofridos',
+    numeric: true,
+    render: (r) => r.pointsAgainst,
+  },
+  {
+    key: 'pr',
+    header: 'Pts',
+    title: 'Razão de pontos (feitos ÷ sofridos)',
+    numeric: true,
+    render: (r) => formatRatio(r.pointsFor, r.pointsAgainst),
+  },
+];
+
+const COLUMNS_BY_SPORT: Record<string, Column<StandingRow>[]> = {
+  basketball_3x3: COLUMNS_3X3,
+  volleyball: COLUMNS_VOLLEYBALL,
+  volleyball_beach: COLUMNS_VOLLEYBALL,
+};
+
 export function standingColumns(sportKey: string): Column<StandingRow>[] {
-  return sportKey === 'basketball_3x3' ? COLUMNS_3X3 : COLUMNS;
+  return COLUMNS_BY_SPORT[sportKey] ?? COLUMNS;
 }
 
 /** Última equipe que avança: a divisória em border entra depois dela. */

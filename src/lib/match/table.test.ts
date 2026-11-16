@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpError, NetworkError } from '../api/client';
 import { MatchTable } from './table';
 
+/** Placar dos basquetes (os testes daqui só jogam basquete). */
+const scoreOf = (state: unknown) =>
+  (state as { teams: Record<'home' | 'away', { score: number }> }).teams;
+
 const roster = (prefix: string) =>
   Array.from({ length: 8 }, (_, i) => ({
     athleteId: `${prefix}${i + 4}`,
@@ -119,7 +123,7 @@ describe('MatchTable', () => {
     await t.load();
     expect(t.record({ type: 'period_start', payload: { period: 1 } }).ok).toBe(true);
     t.record({ type: 'score', payload: { athleteId: 'h4', points: 3 } });
-    expect(t.getSnapshot()!.state.teams.home.score).toBe(3);
+    expect(scoreOf(t.getSnapshot()!.state).home.score).toBe(3);
     await settle();
     expect(fake.events.map((e) => e.seq)).toEqual([1, 2]);
     expect(t.getSnapshot()!.pending).toHaveLength(0);
@@ -143,7 +147,7 @@ describe('MatchTable', () => {
     await settle();
     expect(t.getSnapshot()!.sync).toBe('offline');
     expect(t.getSnapshot()!.pending).toHaveLength(2);
-    expect(t.getSnapshot()!.state.teams.away.score).toBe(2);
+    expect(scoreOf(t.getSnapshot()!.state).away.score).toBe(2);
 
     fake.down = false;
     timers.shift()!();
@@ -198,7 +202,7 @@ describe('MatchTable', () => {
     const r = t.record({ type: 'score', payload: { athleteId: 'h4', points: 3 } });
     if (!r.ok) throw new Error();
     expect(t.voidEvent(r.id).ok).toBe(true);
-    expect(t.getSnapshot()!.state.teams.home.score).toBe(0);
+    expect(scoreOf(t.getSnapshot()!.state).home.score).toBe(0);
     await settle();
     expect(fake.events.map((e) => e.type)).toEqual(['period_start', 'score', 'void']);
   });
@@ -220,7 +224,7 @@ describe('MatchTable', () => {
       'invalid_period_order',
       'period_not_running',
     ]);
-    expect(snap.state.teams.home.score).toBe(0);
+    expect(scoreOf(snap.state).home.score).toBe(0);
   });
 });
 
@@ -241,7 +245,7 @@ describe('MatchTable no 3x3', () => {
       t.record({ type: 'score', payload: { athleteId: 'h4', shot: 'outside' } });
     t.record({ type: 'score', payload: { athleteId: 'h5', shot: 'free_throw' } });
     expect(t.getSnapshot()!.state.status).toBe('finished');
-    expect(t.getSnapshot()!.state.teams.home.score).toBe(21);
+    expect(scoreOf(t.getSnapshot()!.state).home.score).toBe(21);
     const late = t.record({ type: 'score', payload: { athleteId: 'a4', shot: 'inside' } });
     expect(late).toMatchObject({ ok: false, code: 'match_finished' });
     await settle();

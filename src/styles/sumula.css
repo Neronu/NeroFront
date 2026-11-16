@@ -222,6 +222,14 @@
 .sm-top__period {
   color: var(--on-court);
 }
+/* Linha de apoio do placar (sets no vôlei): menor, sem competir com o placar. */
+.sm-top__detail {
+  max-width: 360px;
+  color: var(--on-court);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .sm-sync {
   min-height: 0;
   padding: 0;
@@ -278,7 +286,8 @@
 .is-compact .sm-clock__label {
   display: none;
 }
-.is-compact .sm-top__period {
+.is-compact .sm-top__period,
+.is-compact .sm-top__detail {
   font-size: 12px;
   line-height: 14px;
 }
@@ -360,6 +369,16 @@
   line-height: 16px;
   font-weight: 600;
 }
+.sm-row__serve {
+  flex: none;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
 .sm-row__stat {
   font-family: var(--font-stat);
   font-weight: 500;
@@ -369,8 +388,15 @@
 }
 .sm-row.is-out .sm-row__name,
 .sm-row.is-out .sm-row__num,
-.sm-row.is-out .sm-row__stat {
+.sm-row.is-out .sm-row__stat,
+.sm-row.is-bench .sm-row__name,
+.sm-row.is-bench .sm-row__num,
+.sm-row.is-bench .sm-row__stat {
   color: var(--muted);
+}
+/* Banco (vôlei): esmaecido, mas lançável (o líbero não é controlado). */
+.sm-row.is-bench {
+  background: var(--surface-sunken);
 }
 .sm-row__actions {
   display: flex;

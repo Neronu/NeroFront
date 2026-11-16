@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@neronu/api-contract':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: 2.1.0
+        version: 2.1.0
       '@neronu/sport-basketball':
         specifier: 0.2.0
         version: 0.2.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)
@@ -18,8 +18,14 @@ importers:
         specifier: 0.1.0
         version: 0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)
       '@neronu/sport-core':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: 1.1.0
+        version: 1.1.0
+      '@neronu/sport-volleyball':
+        specifier: 0.1.0
+        version: 0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)
+      '@neronu/sport-volleyball-beach':
+        specifier: 0.1.0
+        version: 0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)
       lucide-react:
         specifier: ^1.72.0
         version: 1.72.0(@types/react@19.3.0)(react@19.3.1)
@@ -706,23 +712,55 @@ packages:
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
-  '@neronu/api-contract@1.0.0':
-    resolution: {integrity: sha512-OsKvyRO3wF14yzhnN+UJuH8fdB0E6xf2nUZUzZy/jjI59VQ6qLP3IQyA+MGZxs8DKamW/xB8BkzRD/u6gZxHfA==, tarball: https://npm.pkg.github.com/download/@neronu/api-contract/1.0.0/57b6cdeedf4ec9a0d42585e6fd37e72ab4553159}
+  '@neronu/api-contract@2.1.0':
+    resolution: {integrity: sha512-6SDOSmq05IwOlsq5+qky2yodbtT3aO8qjrM2Jjq4KFExZjY9aNds4heXXf3+2LaelejILnyhhgqFf06mCPW60w==, tarball: https://npm.pkg.github.com/download/@neronu/api-contract/2.1.0/8d2c6fa37cce82ee1f0e056a487b2c2190a204e2}
 
   '@neronu/sport-basketball-3x3@0.1.0':
     resolution: {integrity: sha512-zml8jRaFNnZTPpO8EyvRUOWF3zNHyvTNnMOJFZOts0gdx3sxMqogxbLi/wZUv11j2XGmzJKMVz29X+ZHs4SuVg==, tarball: https://npm.pkg.github.com/download/@neronu/sport-basketball-3x3/0.1.0/8e3d3f4c68e697bf183e0c0c5cbd4f24a1318b7d}
     peerDependencies:
       '@react-pdf/renderer': ^4.9.0
       react: ^19.0.0
+    peerDependenciesMeta:
+      '@react-pdf/renderer':
+        optional: true
+      react:
+        optional: true
 
   '@neronu/sport-basketball@0.2.0':
     resolution: {integrity: sha512-ulMFzGsi23B50ZcVs8XTup5E5bjPk2Pt9ZOQXt7ch+zJ6ooZ+MhUVbFlwyEij2TlbeJukPnl2Ynt1IUcgINeYQ==, tarball: https://npm.pkg.github.com/download/@neronu/sport-basketball/0.2.0/b6d1734330fd2b08eaad5258fca8e6937b1ec9f8}
     peerDependencies:
       '@react-pdf/renderer': ^4.9.0
       react: ^19.0.0
+    peerDependenciesMeta:
+      '@react-pdf/renderer':
+        optional: true
+      react:
+        optional: true
 
-  '@neronu/sport-core@1.0.0':
-    resolution: {integrity: sha512-V9TjhSa4koV7XN3Y1dXpKVNMG/DPtmPZHRO9Uz+9aoUr+l8Lt4ginGcUZlG9/zyqT5c4+RehcmcdajMQxA53Og==, tarball: https://npm.pkg.github.com/download/@neronu/sport-core/1.0.0/97695de7e15190ea0ee0ce67047a827de5c4c659}
+  '@neronu/sport-core@1.1.0':
+    resolution: {integrity: sha512-/DRtmEvKFvHF1HAr3blanJ0oraeUQzAyK6WPFI3oMjdyGkQjS9rpfkw+IUuaTQBbPymY4gwzBgB5ZwKLyPbQjg==, tarball: https://npm.pkg.github.com/download/@neronu/sport-core/1.1.0/fa2c7164c2985651786c33b7c6c27199f4066d9d}
+
+  '@neronu/sport-volleyball-beach@0.1.0':
+    resolution: {integrity: sha512-bj9lqlOjc8Q4bW5ig6ZhKahi9dtudJEykc0hRyLpeKzaHREWpUn1ciHlF/xGu+lBg/Z9qJFeoKfGy6pjF6IhwA==, tarball: https://npm.pkg.github.com/download/@neronu/sport-volleyball-beach/0.1.0/7b7c72166652d17f52577658c07067ff67ed233a}
+    peerDependencies:
+      '@react-pdf/renderer': ^4.9.0
+      react: ^19.0.0
+    peerDependenciesMeta:
+      '@react-pdf/renderer':
+        optional: true
+      react:
+        optional: true
+
+  '@neronu/sport-volleyball@0.1.0':
+    resolution: {integrity: sha512-nMQgzgVrG9YzWsA7d8wEu2BTPsT1q2HC5XQOrlVNNUyall1uGSPdx7BhE1x8oaAPz3jd+5x7djNE+mslsyQb1g==, tarball: https://npm.pkg.github.com/download/@neronu/sport-volleyball/0.1.0/92d8b6f39ed2de9ad263055f4e54638ddc24f8b6}
+    peerDependencies:
+      '@react-pdf/renderer': ^4.9.0
+      react: ^19.0.0
+    peerDependenciesMeta:
+      '@react-pdf/renderer':
+        optional: true
+      react:
+        optional: true
 
   '@noble/ciphers@1.3.0':
     resolution: {integrity: sha512-2I0gnIVPtfnMw9ee9h1dJG7tp81+8Ob3OJb3Mv37rx5L40/b0i7djjCVvGOVqc9AEIQyvyu1i6ypKdFw8R8gQw==}
@@ -3633,31 +3671,51 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@neronu/api-contract@1.0.0':
+  '@neronu/api-contract@2.1.0':
     dependencies:
       zod: 4.6.7
 
   '@neronu/sport-basketball-3x3@0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@neronu/sport-core': 1.0.0
+      '@neronu/sport-core': 1.1.0
+    optionalDependencies:
       '@react-pdf/renderer': 4.9.0(react@19.3.1)
       react: 19.3.1
 
   '@neronu/sport-basketball@0.2.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@neronu/sport-core': 1.0.0
+      '@neronu/sport-core': 1.1.0
+    optionalDependencies:
       '@react-pdf/renderer': 4.9.0(react@19.3.1)
       react: 19.3.1
 
-  '@neronu/sport-core@1.0.0': {}
+  '@neronu/sport-core@1.1.0': {}
 
-  '@noble/ciphers@1.3.0': {}
+  '@neronu/sport-volleyball-beach@0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@neronu/sport-core': 1.1.0
+      '@neronu/sport-volleyball': 0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)
+    optionalDependencies:
+      '@react-pdf/renderer': 4.9.0(react@19.3.1)
+      react: 19.3.1
 
-  '@noble/hashes@1.8.0': {}
+  '@neronu/sport-volleyball@0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@neronu/sport-core': 1.1.0
+    optionalDependencies:
+      '@react-pdf/renderer': 4.9.0(react@19.3.1)
+      react: 19.3.1
+
+  '@noble/ciphers@1.3.0':
+    optional: true
+
+  '@noble/hashes@1.8.0':
+    optional: true
 
   '@oxc-project/types@0.156.0': {}
 
-  '@react-pdf/fns@3.1.3': {}
+  '@react-pdf/fns@3.1.3':
+    optional: true
 
   '@react-pdf/font@4.1.2':
     dependencies:
@@ -3665,16 +3723,19 @@ snapshots:
       fontkit: 2.0.4
       is-url: 1.2.4
       pdfkit: 0.20.1
+    optional: true
 
   '@react-pdf/hyphenate@0.1.0':
     dependencies:
       hyphen: 1.6.6
+    optional: true
 
   '@react-pdf/image@3.1.2':
     dependencies:
       '@react-pdf/svg': 1.1.1
       jay-peg: 1.1.1
       png-js: 2.0.0
+    optional: true
 
   '@react-pdf/layout@5.2.0':
     dependencies:
@@ -3688,16 +3749,20 @@ snapshots:
       emoji-regex-xs: 1.0.0
       queue: 6.0.2
       yoga-layout: 3.2.1
+    optional: true
 
-  '@react-pdf/paginate@1.0.1': {}
+  '@react-pdf/paginate@1.0.1':
+    optional: true
 
-  '@react-pdf/primitives@4.4.0': {}
+  '@react-pdf/primitives@4.4.0':
+    optional: true
 
   '@react-pdf/reconciler@2.0.0(react@19.3.1)':
     dependencies:
       object-assign: 4.1.1
       react: 19.3.1
       scheduler: 0.25.0-rc-603e6108-20241029
+    optional: true
 
   '@react-pdf/render@4.7.0':
     dependencies:
@@ -3711,6 +3776,7 @@ snapshots:
       normalize-svg-path: 1.1.0
       parse-svg-path: 0.1.2
       svg-arc-to-cubic-bezier: 3.2.0
+    optional: true
 
   '@react-pdf/renderer@4.9.0(react@19.3.1)':
     dependencies:
@@ -3728,6 +3794,7 @@ snapshots:
       prop-types: 15.8.1
       queue: 6.0.2
       react: 19.3.1
+    optional: true
 
   '@react-pdf/stylesheet@6.3.2':
     dependencies:
@@ -3737,10 +3804,12 @@ snapshots:
       hsl-to-hex: 1.0.0
       media-engine: 2.0.0
       postcss-value-parser: 4.2.0
+    optional: true
 
   '@react-pdf/svg@1.1.1':
     dependencies:
       '@react-pdf/primitives': 4.4.0
+    optional: true
 
   '@react-pdf/textkit@7.0.1':
     dependencies:
@@ -3748,12 +3817,14 @@ snapshots:
       '@react-pdf/hyphenate': 0.1.0
       bidi-js: 1.1.0
       unicode-properties: 1.4.1
+    optional: true
 
   '@react-pdf/types@2.14.0':
     dependencies:
       '@react-pdf/font': 4.1.2
       '@react-pdf/primitives': 4.4.0
       '@react-pdf/stylesheet': 6.3.2
+    optional: true
 
   '@remix-run/route-pattern@0.22.1': {}
 
@@ -3925,7 +3996,8 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.68.2':
     optional: true
 
-  '@swc/helpers@0.5.24': {}
+  '@swc/helpers@0.5.24':
+    optional: true
 
   '@testing-library/dom@10.4.2':
     dependencies:
@@ -4105,7 +4177,8 @@ snapshots:
 
   '@vitest/spy@5.1.0': {}
 
-  abs-svg-path@0.1.1: {}
+  abs-svg-path@0.1.1:
+    optional: true
 
   acorn-jsx@5.3.2(acorn@8.19.0):
     dependencies:
@@ -4192,9 +4265,11 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
-  base64-js@0.0.8: {}
+  base64-js@0.0.8:
+    optional: true
 
-  base64-js@1.5.1: {}
+  base64-js@1.5.1:
+    optional: true
 
   baseline-browser-mapping@2.11.35: {}
 
@@ -4209,6 +4284,7 @@ snapshots:
   bidi-js@1.1.0:
     dependencies:
       require-from-string: 2.0.2
+    optional: true
 
   brace-expansion@2.1.7:
     dependencies:
@@ -4221,6 +4297,7 @@ snapshots:
   brotli@1.3.3:
     dependencies:
       base64-js: 1.5.1
+    optional: true
 
   browserslist@4.29.5:
     dependencies:
@@ -4261,13 +4338,16 @@ snapshots:
 
   chai@6.3.0: {}
 
-  clone@2.1.2: {}
+  clone@2.1.2:
+    optional: true
 
-  color-name@2.1.1: {}
+  color-name@2.1.1:
+    optional: true
 
   color-string@2.1.4:
     dependencies:
       color-name: 2.1.1
+    optional: true
 
   commander@2.20.3: {}
 
@@ -4344,7 +4424,8 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
-  dfa@1.2.0: {}
+  dfa@1.2.0:
+    optional: true
 
   dom-accessibility-api@0.5.16: {}
 
@@ -4362,7 +4443,8 @@ snapshots:
 
   electron-to-chromium@1.5.479: {}
 
-  emoji-regex-xs@1.0.0: {}
+  emoji-regex-xs@1.0.0:
+    optional: true
 
   entities@9.0.0: {}
 
@@ -4547,7 +4629,8 @@ snapshots:
 
   eta@4.6.0: {}
 
-  events@3.3.0: {}
+  events@3.3.0:
+    optional: true
 
   expect-type@1.4.0: {}
 
@@ -4563,7 +4646,8 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.7
 
-  fflate@0.8.3: {}
+  fflate@0.8.3:
+    optional: true
 
   file-entry-cache@11.1.5:
     dependencies:
@@ -4597,6 +4681,7 @@ snapshots:
       tiny-inflate: 1.0.3
       unicode-properties: 1.4.1
       unicode-trie: 2.0.0
+    optional: true
 
   for-each@0.3.5:
     dependencies:
@@ -4724,8 +4809,10 @@ snapshots:
   hsl-to-hex@1.0.0:
     dependencies:
       hsl-to-rgb-for-reals: 1.1.1
+    optional: true
 
-  hsl-to-rgb-for-reals@1.1.1: {}
+  hsl-to-rgb-for-reals@1.1.1:
+    optional: true
 
   html-encoding-sniffer@7.0.0(@noble/hashes@1.8.0):
     dependencies:
@@ -4733,7 +4820,8 @@ snapshots:
     transitivePeerDependencies:
       - '@noble/hashes'
 
-  hyphen@1.6.6: {}
+  hyphen@1.6.6:
+    optional: true
 
   idb@7.1.1: {}
 
@@ -4745,7 +4833,8 @@ snapshots:
 
   indent-string@4.0.0: {}
 
-  inherits@2.0.4: {}
+  inherits@2.0.4:
+    optional: true
 
   internal-slot@1.1.0:
     dependencies:
@@ -4871,7 +4960,8 @@ snapshots:
     dependencies:
       which-typed-array: 1.1.24
 
-  is-url@1.2.4: {}
+  is-url@1.2.4:
+    optional: true
 
   is-weakmap@2.0.2: {}
 
@@ -4901,6 +4991,7 @@ snapshots:
   jay-peg@1.1.1:
     dependencies:
       restructure: 3.0.2
+    optional: true
 
   js-tokens@4.0.0: {}
 
@@ -5009,6 +5100,7 @@ snapshots:
     dependencies:
       base64-js: 0.0.8
       unicode-trie: 2.0.0
+    optional: true
 
   locate-path@6.0.0:
     dependencies:
@@ -5019,6 +5111,7 @@ snapshots:
   loose-envify@1.4.0:
     dependencies:
       js-tokens: 4.0.0
+    optional: true
 
   lru-cache@11.5.3: {}
 
@@ -5044,7 +5137,8 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  media-engine@2.0.0: {}
+  media-engine@2.0.0:
+    optional: true
 
   min-indent@1.0.1: {}
 
@@ -5069,8 +5163,10 @@ snapshots:
   normalize-svg-path@1.1.0:
     dependencies:
       svg-arc-to-cubic-bezier: 3.2.0
+    optional: true
 
-  object-assign@4.1.1: {}
+  object-assign@4.1.1:
+    optional: true
 
   object-inspect@1.13.4: {}
 
@@ -5113,9 +5209,11 @@ snapshots:
 
   package-json-from-dist@1.0.1: {}
 
-  pako@0.2.9: {}
+  pako@0.2.9:
+    optional: true
 
-  parse-svg-path@0.1.2: {}
+  parse-svg-path@0.1.2:
+    optional: true
 
   parse5-parser-stream@8.1.1:
     dependencies:
@@ -5144,6 +5242,7 @@ snapshots:
       fontkit: 2.0.4
       linebreak: 1.1.0
       png-js: 2.0.0
+    optional: true
 
   picocolors@1.1.1: {}
 
@@ -5152,10 +5251,12 @@ snapshots:
   png-js@2.0.0:
     dependencies:
       fflate: 0.8.3
+    optional: true
 
   possible-typed-array-names@1.1.0: {}
 
-  postcss-value-parser@4.2.0: {}
+  postcss-value-parser@4.2.0:
+    optional: true
 
   postcss@8.5.32:
     dependencies:
@@ -5182,6 +5283,7 @@ snapshots:
       loose-envify: 1.4.0
       object-assign: 4.1.1
       react-is: 16.13.1
+    optional: true
 
   punycode@2.3.1: {}
 
@@ -5192,13 +5294,15 @@ snapshots:
   queue@6.0.2:
     dependencies:
       inherits: 2.0.4
+    optional: true
 
   react-dom@19.3.1(react@19.3.1):
     dependencies:
       react: 19.3.1
       scheduler: 0.28.0
 
-  react-is@16.13.1: {}
+  react-is@16.13.1:
+    optional: true
 
   react-is@17.0.2: {}
 
@@ -5269,7 +5373,8 @@ snapshots:
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
-  restructure@3.0.2: {}
+  restructure@3.0.2:
+    optional: true
 
   rolldown@1.2.18:
     dependencies:
@@ -5347,7 +5452,8 @@ snapshots:
     dependencies:
       xmlchars: 2.2.0
 
-  scheduler@0.25.0-rc-603e6108-20241029: {}
+  scheduler@0.25.0-rc-603e6108-20241029:
+    optional: true
 
   scheduler@0.28.0: {}
 
@@ -5489,7 +5595,8 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  svg-arc-to-cubic-bezier@3.2.0: {}
+  svg-arc-to-cubic-bezier@3.2.0:
+    optional: true
 
   temp-dir@2.0.0: {}
 
@@ -5507,7 +5614,8 @@ snapshots:
       commander: 2.20.3
       source-map-support: 0.5.21
 
-  tiny-inflate@1.0.3: {}
+  tiny-inflate@1.0.3:
+    optional: true
 
   tinybench@6.2.3: {}
 
@@ -5611,6 +5719,7 @@ snapshots:
     dependencies:
       base64-js: 1.5.1
       unicode-trie: 2.0.0
+    optional: true
 
   unicode-property-aliases-ecmascript@2.2.0: {}
 
@@ -5618,6 +5727,7 @@ snapshots:
     dependencies:
       pako: 0.2.9
       tiny-inflate: 1.0.3
+    optional: true
 
   unique-string@2.0.0:
     dependencies:
@@ -5868,7 +5978,8 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  yoga-layout@3.2.1: {}
+  yoga-layout@3.2.1:
+    optional: true
 
   zod-validation-error@4.0.2(zod@4.6.7):
     dependencies:

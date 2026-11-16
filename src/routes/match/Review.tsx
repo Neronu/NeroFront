@@ -45,7 +45,9 @@ export function Review() {
   const { module } = snapshot.sport;
   const sport = sportTable(snapshot.sport.key);
   const stats = module.playerStats(state);
-  const periods = Array.from({ length: state.period }, (_, i) => sport.periodName(state, i + 1));
+  const periods = sport.periodScores(state);
+  // Placar principal do módulo: pontos no basquete, sets no vôlei.
+  const final = module.summary(state).score;
   const finished = state.status === 'finished';
   const pending = snapshot.pending.length;
   const sides = ['home', 'away'] as const;
@@ -80,34 +82,34 @@ export function Review() {
       <section className="review-score on-court" aria-label="Placar final">
         <span className="review-score__team">{teamName('home')}</span>
         <span className="t-score review-score__value">
-          {state.teams.home.score}
+          {final.home}
           <span aria-hidden="true"> : </span>
           <span className="sr-only"> a </span>
-          {state.teams.away.score}
+          {final.away}
         </span>
         <span className="review-score__team">{teamName('away')}</span>
       </section>
 
       <DataTable
-        caption="Pontos por período"
+        caption={sport.periodsCaption}
         mode="scroll"
         rows={[...sides]}
         rowKey={(s) => s}
         columns={[
           { key: 'team', header: 'Equipe', lead: true, render: (s) => teamName(s) },
-          ...periods.map((p, i) => ({
-            key: p,
-            header: sport.shortPeriod(p),
-            title: p,
+          ...periods.map((p) => ({
+            key: p.label,
+            header: sport.shortPeriod(p.label),
+            title: p.label,
             numeric: true,
-            render: (s: (typeof sides)[number]) => state.teams[s].scoreByPeriod[i] ?? 0,
+            render: (s: (typeof sides)[number]) => p[s],
           })),
           {
             key: 'total',
-            header: 'T',
-            title: 'Total',
+            header: sport.total.short,
+            title: sport.total.label,
             numeric: true,
-            render: (s) => <strong>{state.teams[s].score}</strong>,
+            render: (s) => <strong>{final[s]}</strong>,
           },
         ]}
       />

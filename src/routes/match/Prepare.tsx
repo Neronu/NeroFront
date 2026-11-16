@@ -75,6 +75,11 @@ function PrepareForm({ id, data }: { id: string; data: Loaded }) {
   const fixedNumbers = match.championshipId !== null;
   const { starters: STARTERS } = sportOf(match.sportKey);
 
+  /** Com exatamente o número de titulares relacionados, todos são titulares (ex.: a dupla). */
+  const allStart = (s: TeamSide) =>
+    Object.values(picks[s]).filter((p) => p.selected).length === STARTERS;
+  const starts = (s: TeamSide, p: Pick) => p.selected && (p.isStarter || allStart(s));
+
   const update = (side: TeamSide, athleteId: string, change: Partial<Pick>) =>
     setPicks((p) => ({
       ...p,
@@ -87,7 +92,11 @@ function PrepareForm({ id, data }: { id: string; data: Loaded }) {
     const side = (s: TeamSide) =>
       Object.entries(picks[s])
         .filter(([, p]) => p.selected)
-        .map(([athleteId, p]) => ({ athleteId, number: Number(p.number), isStarter: p.isStarter }));
+        .map(([athleteId, p]) => ({
+          athleteId,
+          number: Number(p.number),
+          isStarter: starts(s, p),
+        }));
     try {
       await api.putRoster(id, { home: side('home'), away: side('away') });
       navigate(`/partidas/${id}/mesa`);
@@ -108,7 +117,7 @@ function PrepareForm({ id, data }: { id: string; data: Loaded }) {
       <div className="lyt-grid">
         {(['home', 'away'] as const).map((side) => {
           const list = picks[side];
-          const starters = Object.values(list).filter((p) => p.selected && p.isStarter).length;
+          const starters = Object.values(list).filter((p) => starts(side, p)).length;
           const selected = Object.values(list).filter((p) => p.selected).length;
           const ready = starters === STARTERS;
           return (
@@ -158,8 +167,8 @@ function PrepareForm({ id, data }: { id: string; data: Loaded }) {
                         <button
                           type="button"
                           className="ui-toggle"
-                          aria-pressed={pick.isStarter}
-                          disabled={!pick.selected}
+                          aria-pressed={starts(side, pick)}
+                          disabled={!pick.selected || allStart(side)}
                           onClick={() => update(side, p.athleteId, { isStarter: !pick.isStarter })}
                         >
                           Titular
