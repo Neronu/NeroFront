@@ -1,7 +1,7 @@
 import type { MatchStateResponse, StoredEvent } from '../../lib/api/contract';
 import { defaultRules } from '@neronu/sport-basketball';
 import { defaultRules as rules3x3 } from '@neronu/sport-basketball-3x3';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TablePage } from './TablePage';
@@ -199,7 +199,12 @@ describe('relógio', () => {
     vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
     vi.setSystemTime(T0);
   });
-  afterEach(() => vi.useRealTimers());
+  // Desmonta a mesa antes de voltar à hora real: com ela montada e o relógio correndo, o salto
+  // para a hora real zeraria o relógio e lançaria um clock_stop que vaza para o próximo teste.
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
 
   const timer = () => screen.getByRole('timer', { name: 'Relógio do período' });
   const advance = (ms: number) => act(() => vi.advanceTimersByTime(ms));
