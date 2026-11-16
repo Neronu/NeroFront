@@ -373,3 +373,30 @@ export interface TeamLinkPreview {
 export interface JoinTeamRequest {
   number?: number;
 }
+
+// ─── Vôlei (api-contract minor, ainda não publicada) ─────────────────────────
+
+/** Placar de um período (ex.: "1º set", 25 a 21). */
+export interface PeriodScore {
+  label: string;
+  home: number;
+  away: number;
+}
+
+export interface ChampionshipMatch extends C.ChampionshipMatch {
+  /** Parciais (sets no vôlei); nulo sem parciais ou antes do fechamento. */
+  periodScores?: PeriodScore[] | null;
+}
+
+export interface StandingRow extends C.StandingRow {
+  /** Colunas próprias do esporte (ex.: `setsWon`, `setsLost` no vôlei). */
+  extra?: Record<string, number>;
+}
+
+export interface StandingsResponse {
+  phases: {
+    id: string;
+    name: string;
+    groups: { id: string; name: string; complete: boolean; rows: StandingRow[] }[];
+  }[];
+}

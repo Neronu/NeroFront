@@ -90,6 +90,12 @@
   color: var(--muted);
   font-family: var(--font-stat);
 }
+/* Parciais dos sets (vôlei): "25–20, 22–25, 25–18". */
+.ch-game__periods {
+  color: var(--muted);
+  font-family: var(--font-stat);
+  font-variant-numeric: tabular-nums;
+}
 .ch-game__link {
   display: inline-flex;
   align-items: center;

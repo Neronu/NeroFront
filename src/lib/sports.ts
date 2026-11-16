@@ -5,6 +5,16 @@ import {
   ROSTER_MIN as BASKETBALL_3X3_ROSTER_MIN,
   STARTERS as BASKETBALL_3X3_STARTERS,
 } from '@neronu/sport-basketball-3x3';
+import {
+  ROSTER_MIN as VOLLEYBALL_ROSTER_MIN,
+  STARTERS as VOLLEYBALL_STARTERS,
+  volleyball,
+} from '@neronu/sport-volleyball';
+import {
+  ROSTER_MIN as BEACH_ROSTER_MIN,
+  STARTERS as BEACH_STARTERS,
+  volleyballBeach,
+} from '@neronu/sport-volleyball-beach';
 
 export type AnySport = SportModule<RuleSet, unknown, MatchEvent>;
 
@@ -37,6 +47,20 @@ export const SPORTS: readonly SportOption[] = [
     module: basketball3x3 as unknown as AnySport,
     starters: BASKETBALL_3X3_STARTERS,
     rosterMin: BASKETBALL_3X3_ROSTER_MIN,
+  },
+  {
+    key: volleyball.key,
+    name: volleyball.name,
+    module: volleyball as unknown as AnySport,
+    starters: VOLLEYBALL_STARTERS,
+    rosterMin: VOLLEYBALL_ROSTER_MIN,
+  },
+  {
+    key: volleyballBeach.key,
+    name: volleyballBeach.name,
+    module: volleyballBeach as unknown as AnySport,
+    starters: BEACH_STARTERS,
+    rosterMin: BEACH_ROSTER_MIN,
   },
 ];
 

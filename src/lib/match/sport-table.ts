@@ -25,6 +25,28 @@ import {
   type Shot,
 } from '@neronu/sport-basketball-3x3';
 import { isVoidEvent } from '@neronu/sport-core';
+import {
+  isMatchPoint,
+  isSetPoint,
+  isTieBreak,
+  setLabel,
+  setTarget,
+  sideSwitchAt,
+  substitutionsLeft,
+  timeoutsLeft as vbTimeouts,
+  totalErrors,
+  type ErrorKind,
+  type PointKind,
+  type RallyState,
+  type SanctionKind,
+  type VolleyballState,
+} from '@neronu/sport-volleyball';
+import {
+  sideSwitchDue,
+  sideSwitchEvery,
+  technicalTimeoutDue,
+  type BeachState,
+} from '@neronu/sport-volleyball-beach';
 import { formatClock, formatElapsed } from '../format';
 import type { ShotClockConfig } from './shot-clock';
 import type { Draft, SportState, TableEvent } from './table';
@@ -48,43 +70,99 @@ export interface Who {
   side: Side;
 }
 
+export type PlayerStatus = 'active' | 'fouled_out' | 'disqualified' | 'expelled';
+
+/** Selo ao lado do nome de quem não pode mais ser lançado. */
+export const STATUS_TAG: Record<Exclude<PlayerStatus, 'active'>, string> = {
+  fouled_out: 'EXC',
+  disqualified: 'DESQ',
+  expelled: 'EXP',
+};
+
 export interface TablePlayer {
   athleteId: string;
   side: Side;
   number: number;
-  points: number;
-  fouls: number;
-  status: 'active' | 'fouled_out' | 'disqualified';
+  /** Valores das colunas de `playerColumns`, na mesma ordem. */
+  stats: readonly number[];
+  status: PlayerStatus;
+  /** Em quadra; ausente quando o esporte não controla quem está em quadra. */
+  onCourt?: boolean;
+  /** Está sacando (vôlei de praia, saque por atleta). */
+  serving?: boolean;
 }
 
-/** Botão de cesta na linha do atleta. */
+/** Coluna numérica da linha do atleta na mesa ("PTS", "FLT"). */
+export interface PlayerColumn {
+  short: string;
+  /** Rótulo acessível, no plural ("pontos"). */
+  label: string;
+}
+
+/** Botão de lançamento na linha do atleta. */
 export interface ScoreButton {
   key: string;
-  /** Texto do botão ("+2", "LL"). */
+  /** Texto do botão ("+2", "LL", "ATQ"). */
   label: string;
   /** Complemento do rótulo acessível ("+2 para o número 4"). */
   aria: string;
   draft(athleteId: string): Draft;
+  /** Desligado no momento (ex.: ace de quem não saca); sem a função, sempre ligado. */
+  enabled?(state: SportState, player: TablePlayer): boolean;
 }
+
+/**
+ * Último botão da linha do atleta, mais largo: lança direto (Falta, no basquete) ou abre uma
+ * escolha (Erro → saque, ataque, falta de jogo, no vôlei).
+ */
+export type RowAction =
+  | { label: string; draft(athleteId: string): Draft }
+  | { label: string; options: readonly ScoreButton[] };
 
 export interface TeamMeta {
   label: string;
   value: number;
-  /** Aviso ao lado ("Bônus", "2 LL"). */
+  /** Aviso ao lado ("Bônus", "2 LL", "Saque"). */
   flag?: string;
 }
 
 export interface TeamAction {
   key: string;
   label: string;
-  draft: Draft;
+  /** Lançamento direto. */
+  draft?: Draft;
+  /** Abre um seletor em vez de lançar direto. */
+  picker?: 'substitution';
+  /** Disponível agora; sem o campo, só com o período em andamento. */
+  enabled?: boolean;
+  /** Pergunta de confirmação antes de lançar. */
+  confirm?: string;
 }
 
-/** A ação do momento na mesa; sem `draft`, é só informativa (botão desabilitado). */
+/** Formulário antes de lançar (ex.: quem saca primeiro no set e, no praia, os sacadores). */
+export interface MomentForm {
+  title: string;
+  /** Texto do botão de confirmar. */
+  submit: string;
+  /** Campos de escolha; o primeiro valor de cada um já vem selecionado. */
+  fields: { key: string; label: string; options: { value: string; label: string }[] }[];
+  build(values: Record<string, string>): Draft;
+}
+
+/** A ação do momento na mesa; sem `draft` nem `form`, é só informativa (botão desabilitado). */
 export interface MomentAction {
   label: string;
   confirm?: string;
   draft?: Draft;
+  /** Escolhas antes de lançar. */
+  form?: MomentForm;
+}
+
+/** Lançamento sobre um atleta fora da linha dele (faltas especiais, sanções). */
+export interface AthleteAction {
+  key: string;
+  label: string;
+  draft(athleteId: string, side: Side): Draft;
 }
 
 /**
@@ -119,13 +197,34 @@ export const clockStopPayload = (c: TableClock) =>
 export interface RectifyAction {
   key: string;
   label: string;
-  event(athleteId: string): { type: string; payload: Record<string, unknown> };
+  event(athleteId: string, side: Side): { type: string; payload: Record<string, unknown> };
+}
+
+export interface PeriodScore {
+  label: string;
+  home: number;
+  away: number;
 }
 
 /** Como cada esporte aparece na mesa, na conferência e na retificação. Só dados, sem React. */
 export interface SportTable {
+  /** Dá para lançar agora (período ou set em andamento)? */
+  live(state: SportState): boolean;
+  /** Período ou set atual (0 antes do início). */
+  period(state: SportState): number;
+  /** Placar grande do topo e uma linha de apoio (ex.: "Sets 1–0"). */
+  scoreboard(state: SportState): { home: number; away: number; detail?: string };
+  /** Parciais jogadas, para a conferência. */
+  periodScores(state: SportState): PeriodScore[];
+  /** Título da tabela de parciais e cabeçalho da coluna de total, na conferência. */
+  periodsCaption: string;
+  total: { short: string; label: string };
   players(state: SportState): TablePlayer[];
+  playerColumns: readonly PlayerColumn[];
   scoreButtons: readonly ScoreButton[];
+  rowAction: RowAction;
+  /** Lançamentos sobre um atleta no "Mais lançamentos". */
+  athleteActions: { title: string; actions: readonly AthleteAction[] };
   /** Texto do centro do topo ("2º quarto", "Tempo normal · até 21"). */
   phase(state: SportState): string;
   teamMeta(state: SportState, side: Side): TeamMeta[];
@@ -139,13 +238,21 @@ export interface SportTable {
     teamName: (side: Side) => string,
     state: SportState,
   ): string;
-  /** Relógio em `now`; nulo sem período em andamento ou em período sem relógio. */
+  /** Relógio em `now`; nulo sem período em andamento, em período sem relógio ou sem relógio. */
   clock(state: SportState, now: Date): TableClock | null;
+  /** Desde quando o relógio corre (ISO); nulo parado ou sem relógio. */
+  clockSince(state: SportState): string | null;
   /** Próxima ação de período; nulo com o jogo encerrado. */
-  moment(state: SportState): MomentAction | null;
+  moment(
+    state: SportState,
+    teamName: (side: Side) => string,
+    athletes: (side: Side) => { id: string; label: string }[],
+  ): MomentAction | null;
+  /** Aviso do momento para a mesa (ex.: troca de lado no tie-break). */
+  notice?(state: SportState): string | null;
   rectifyActions: readonly RectifyAction[];
-  /** Cronômetro de posse: duração cheia e os reinícios oferecidos na mesa. */
-  shotClock: ShotClockConfig;
+  /** Cronômetro de posse: duração cheia e os reinícios oferecidos na mesa; ausente sem posse. */
+  shotClock?: ShotClockConfig;
   /** Explica as letras da coluna de faltas e a regra de fim, quando houver. */
   hint?: string;
 }
@@ -159,26 +266,70 @@ const foulActions: RectifyAction[] = (Object.keys(FOUL_LABEL) as FoulKind[]).map
   event: (athleteId) => ({ type: 'foul', payload: { athleteId, kind: k } }),
 }));
 
+/** Pontos e faltas, as duas colunas da linha do atleta nos basquetes. */
+const BASKETBALL_COLUMNS: readonly PlayerColumn[] = [
+  { short: 'PTS', label: 'pontos' },
+  { short: 'FLT', label: 'faltas' },
+];
+
+const basketballRowAction: RowAction = {
+  label: 'Falta',
+  draft: (athleteId) => ({ type: 'foul', payload: { athleteId, kind: 'personal' } }),
+};
+
+const specialFouls = {
+  title: 'Faltas especiais',
+  actions: SPECIAL_FOULS.map((kind) => ({
+    key: kind,
+    label: FOUL_LABEL[kind],
+    draft: (athleteId: string): Draft => ({ type: 'foul', payload: { athleteId, kind } }),
+  })),
+};
+
+/** Parciais pela pontuação de cada período (basquetes). */
+function scoreByPeriod(
+  teams: Record<Side, { scoreByPeriod: readonly number[] }>,
+  periods: number,
+  name: (period: number) => string,
+): PeriodScore[] {
+  return Array.from({ length: periods }, (_, i) => ({
+    label: name(i + 1),
+    home: teams.home.scoreByPeriod[i] ?? 0,
+    away: teams.away.scoreByPeriod[i] ?? 0,
+  }));
+}
+
 // ─── Basquete 5x5 ─────────────────────────────────────────────────────────────
 
 const b5 = (s: SportState) => s as BasketballState;
 
 const basketballTable: SportTable = {
+  live: (state) => b5(state).status === 'in_period',
+  period: (state) => b5(state).period,
+  scoreboard: (state) => ({ home: b5(state).teams.home.score, away: b5(state).teams.away.score }),
+  periodScores: (state) => {
+    const s = b5(state);
+    return scoreByPeriod(s.teams, s.period, (p) => basketballPeriod(s, p));
+  },
+  periodsCaption: 'Pontos por período',
+  total: { short: 'T', label: 'Total' },
   players: (state) =>
     Object.values(b5(state).players).map((p) => ({
       athleteId: p.athleteId,
       side: p.side,
       number: p.number,
-      points: p.points,
-      fouls: basketballFouls(p),
+      stats: [p.points, basketballFouls(p)],
       status: p.status,
     })),
+  playerColumns: BASKETBALL_COLUMNS,
   scoreButtons: ([1, 2, 3] as const).map((points) => ({
     key: String(points),
     label: `+${points}`,
     aria: `+${points}`,
     draft: (athleteId) => ({ type: 'score', payload: { athleteId, points } }),
   })),
+  rowAction: basketballRowAction,
+  athleteActions: specialFouls,
   phase: (state) => {
     const s = b5(state);
     if (s.status === 'finished') return 'Encerrado';
@@ -239,6 +390,8 @@ const basketballTable: SportTable = {
         return 'remainingMs' in e.payload
           ? `Relógio parado · ${formatClock(e.payload.remainingMs)}`
           : 'Relógio parado';
+      default:
+        return 'Lance';
     }
   },
   clock: (state, now) => {
@@ -252,6 +405,7 @@ const basketballTable: SportTable = {
       durationMs: periodDurationMs(s),
     };
   },
+  clockSince: (state) => b5(state).clock?.runningSince ?? null,
   moment: (state) => {
     const s = b5(state);
     if (s.status === 'finished') return null;
@@ -309,15 +463,24 @@ const x3Of = (s: Basketball3x3State, period: number) =>
   period === OVERTIME ? 'da prorrogação' : `do ${x3Period(s, period).toLowerCase()}`;
 
 const basketball3x3Table: SportTable = {
+  live: (state) => b3(state).status === 'in_period',
+  period: (state) => b3(state).period,
+  scoreboard: (state) => ({ home: b3(state).teams.home.score, away: b3(state).teams.away.score }),
+  periodScores: (state) => {
+    const s = b3(state);
+    return scoreByPeriod(s.teams, s.period, (p) => x3Period(s, p));
+  },
+  periodsCaption: 'Pontos por período',
+  total: { short: 'T', label: 'Total' },
   players: (state) =>
     Object.values(b3(state).players).map((p) => ({
       athleteId: p.athleteId,
       side: p.side,
       number: p.number,
-      points: p.points,
-      fouls: x3Fouls(p),
+      stats: [p.points, x3Fouls(p)],
       status: p.status,
     })),
+  playerColumns: BASKETBALL_COLUMNS,
   scoreButtons: (
     [
       ['inside', '+1', '+1, cesta de 1'],
@@ -330,6 +493,8 @@ const basketball3x3Table: SportTable = {
     aria,
     draft: (athleteId: string) => ({ type: 'score', payload: { athleteId, shot } }),
   })),
+  rowAction: basketballRowAction,
+  athleteActions: specialFouls,
   phase: (state) => {
     const s = b3(state);
     if (s.status === 'finished') return 'Encerrado';
@@ -395,6 +560,7 @@ const basketball3x3Table: SportTable = {
     if (remainingMs === null) return null;
     return { kind: 'countdown', remainingMs, running, durationMs: gameDurationMs(s) };
   },
+  clockSince: (state) => b3(state).clock?.runningSince ?? null,
   moment: (state) => {
     const s = b3(state);
     if (s.status === 'finished') return null;
@@ -432,9 +598,377 @@ const basketball3x3Table: SportTable = {
   hint: 'O jogo termina sozinho quando uma equipe chega ao limite de pontos ou vence a prorrogação.',
 };
 
+// ─── Vôlei ────────────────────────────────────────────────────────────────────
+
+/** O que o adaptador lê dos dois vôleis: o núcleo comum mais o sacador do praia. */
+type AnyVolleyball = RallyState & { readonly server?: string | null };
+const vb = (s: SportState) => s as unknown as AnyVolleyball;
+
+export const POINT_LABEL: Record<PointKind, string> = {
+  attack: 'Ponto de ataque',
+  block: 'Ponto de bloqueio',
+  ace: 'Ace',
+  serve_error: 'Erro de saque',
+  attack_error: 'Erro de ataque',
+  fault: 'Falta de jogo',
+};
+
+export const SANCTION_LABEL: Record<SanctionKind, string> = {
+  warning: 'Advertência',
+  penalty: 'Penalização',
+  expulsion: 'Expulsão',
+  disqualification: 'Desqualificação',
+};
+
+const pointDraft =
+  (kind: PointKind) =>
+  (athleteId: string): Draft => ({ type: 'point', payload: { athleteId, kind } });
+
+/** "1º set 25–20 · 2º set 18–25". */
+const partials = (s: AnyVolleyball) =>
+  s.sets.map((set, i) => `${setLabel(s, i + 1)} ${set.home}–${set.away}`).join(' · ');
+
+/** Equipes na ordem de saque sugerida: alterna a cada set; no decisivo, sem sugestão. */
+function serveOrder(s: AnyVolleyball, next: number): Side[] {
+  const last = s.sets.at(-1)?.firstServe;
+  return last && !isTieBreak(s, next)
+    ? [last === 'home' ? 'away' : 'home', last]
+    : ['home', 'away'];
+}
+
+/** O que muda entre o vôlei de quadra e o de praia. */
+interface VolleyballVariant {
+  /** "equipe" ou "dupla", nos textos. */
+  team: string;
+  /** Quem pode fazer ace e erro de saque agora. */
+  canServe(state: AnyVolleyball, p: TablePlayer): boolean;
+  /** Campos próprios da linha do atleta (quadra/banco, sacador). */
+  playerExtras(state: AnyVolleyball, athleteId: string): Partial<TablePlayer>;
+  /** Item próprio da equipe no topo, depois de Sets e Tempos. */
+  extraMeta(state: AnyVolleyball, side: Side): TeamMeta[];
+  /** Ações próprias da equipe (substituição, abandono), antes das comuns. */
+  extraActions(state: AnyVolleyball, side: Side): TeamAction[];
+  /** Formulário de início do set. */
+  setStart(
+    state: AnyVolleyball,
+    next: number,
+    teamName: (side: Side) => string,
+    athletes: (side: Side) => { id: string; label: string }[],
+  ): MomentForm;
+  /** Descrição dos eventos próprios; nulo para os comuns. */
+  describe(
+    e: TableEvent,
+    who: (athleteId: string) => Who | undefined,
+    teamName: (side: Side) => string,
+    state: AnyVolleyball,
+  ): string | null;
+  notice(state: AnyVolleyball): string | null;
+  hint: string;
+}
+
+function makeVolleyballTable(v: VolleyballVariant): SportTable {
+  const canServe = (state: SportState, p: TablePlayer) => v.canServe(vb(state), p);
+  const errorOptions: readonly ScoreButton[] = (
+    [
+      ['serve_error', 'Erro de saque'],
+      ['attack_error', 'Erro de ataque'],
+      ['fault', 'Falta de jogo (rede, invasão, condução…)'],
+    ] as const satisfies readonly (readonly [ErrorKind, string])[]
+  ).map(([kind, label]) => ({
+    key: kind,
+    label,
+    aria: label,
+    draft: pointDraft(kind),
+    ...(kind === 'serve_error' ? { enabled: canServe } : {}),
+  }));
+
+  return {
+    live: (state) => vb(state).status === 'in_set',
+    period: (state) => vb(state).set,
+    scoreboard: (state) => {
+      const s = vb(state);
+      const sets = `Sets ${s.teams.home.setsWon}–${s.teams.away.setsWon}`;
+      const current = s.sets[s.set - 1];
+      if (s.status === 'in_set' && current) {
+        return { home: current.home, away: current.away, detail: sets };
+      }
+      return {
+        home: s.teams.home.setsWon,
+        away: s.teams.away.setsWon,
+        ...(s.sets.length ? { detail: partials(s) } : {}),
+      };
+    },
+    periodScores: (state) => {
+      const s = vb(state);
+      return s.sets.map((set, i) => ({
+        label: setLabel(s, i + 1),
+        home: set.home,
+        away: set.away,
+      }));
+    },
+    periodsCaption: 'Pontos por set',
+    total: { short: 'Sets', label: 'Sets vencidos' },
+    players: (state) => {
+      const s = vb(state);
+      return Object.values(s.players).map((p) => ({
+        athleteId: p.athleteId,
+        side: p.side,
+        number: p.number,
+        stats: [p.points, totalErrors(p)],
+        status: p.status,
+        ...v.playerExtras(s, p.athleteId),
+      }));
+    },
+    playerColumns: [
+      { short: 'PTS', label: 'pontos' },
+      { short: 'ERR', label: 'erros' },
+    ],
+    scoreButtons: (
+      [
+        ['attack', 'ATQ', 'Ponto de ataque'],
+        ['block', 'BLQ', 'Ponto de bloqueio'],
+        ['ace', 'ACE', 'Ace'],
+      ] as const
+    ).map(([kind, label, aria]) => ({
+      key: kind,
+      label,
+      aria,
+      draft: pointDraft(kind),
+      ...(kind === 'ace' ? { enabled: canServe } : {}),
+    })),
+    rowAction: { label: 'Erro', options: errorOptions },
+    athleteActions: {
+      title: 'Sanções',
+      actions: (Object.keys(SANCTION_LABEL) as SanctionKind[]).map((kind) => ({
+        key: kind,
+        label: SANCTION_LABEL[kind],
+        draft: (athleteId, side) => ({ type: 'sanction', payload: { side, athleteId, kind } }),
+      })),
+    },
+    phase: (state) => {
+      const s = vb(state);
+      if (s.status === 'finished') return 'Encerrado';
+      if (s.status === 'not_started') return 'Antes do início';
+      if (s.status === 'break') return `Intervalo · fim do ${setLabel(s).toLowerCase()}`;
+      const base = `${setLabel(s)} · até ${setTarget(s)}`;
+      if (isMatchPoint(s, 'home') || isMatchPoint(s, 'away')) return `${base} · match point`;
+      if (isSetPoint(s, 'home') || isSetPoint(s, 'away')) return `${base} · set point`;
+      return base;
+    },
+    teamMeta: (state, side) => {
+      const s = vb(state);
+      return [
+        {
+          label: 'Sets',
+          value: s.teams[side].setsWon,
+          ...(s.status === 'in_set' && s.serving === side ? { flag: 'Saque' } : {}),
+        },
+        { label: 'Tempos', value: vbTimeouts(s, side) },
+        ...v.extraMeta(s, side),
+      ];
+    },
+    teamActions: (state, side) => {
+      const s = vb(state);
+      return [
+        ...v.extraActions(s, side),
+        {
+          key: 'timeout',
+          label: `Pedir tempo (${vbTimeouts(s, side)} restantes no set)`,
+          draft: { type: 'timeout', payload: { side } },
+        },
+        {
+          key: 'team-warning',
+          label: `Advertência à ${v.team}`,
+          draft: { type: 'sanction', payload: { side, kind: 'warning' } },
+        },
+        {
+          key: 'team-penalty',
+          label: `Penalização à ${v.team} (ponto ao adversário)`,
+          draft: { type: 'sanction', payload: { side, kind: 'penalty' } },
+        },
+      ];
+    },
+    periodName: (state, period) => setLabel(vb(state), period),
+    shortPeriod: (p) =>
+      p === 'Tie-break' ? 'TB' : p === 'Set único' ? 'S' : p.replace('º set', 'S'),
+    describe: (e, who, teamName, state) => {
+      if (isVoidEvent(e)) return 'Anulação';
+      const own = v.describe(e, who, teamName, vb(state));
+      if (own !== null) return own;
+      switch (e.type) {
+        case 'point':
+          return `${POINT_LABEL[e.payload.kind]} · ${athlete(who(e.payload.athleteId), teamName)}`;
+        case 'timeout':
+          return `Tempo · ${teamName(e.payload.side)}`;
+        case 'sanction': {
+          const target = e.payload.athleteId
+            ? athlete(who(e.payload.athleteId), teamName)
+            : teamName(e.payload.side);
+          return `${SANCTION_LABEL[e.payload.kind]} · ${target}`;
+        }
+        default:
+          return 'Lance';
+      }
+    },
+    clock: () => null,
+    clockSince: () => null,
+    moment: (state, teamName, athletes) => {
+      const s = vb(state);
+      if (s.status === 'finished') return null;
+      if (s.status === 'in_set') return { label: `${setLabel(s)} até ${setTarget(s)}` };
+      const next = s.set + 1;
+      return {
+        label: `Iniciar ${setLabel(s, next).toLowerCase()}`,
+        form: v.setStart(s, next, teamName, athletes),
+      };
+    },
+    notice: (state) => v.notice(vb(state)),
+    rectifyActions: [
+      ...(Object.keys(POINT_LABEL) as PointKind[]).map((kind) => ({
+        key: `point:${kind}`,
+        label: POINT_LABEL[kind],
+        event: (athleteId: string) => ({ type: 'point', payload: { athleteId, kind } }),
+      })),
+      ...(Object.keys(SANCTION_LABEL) as SanctionKind[]).map((kind) => ({
+        key: `sanction:${kind}`,
+        label: SANCTION_LABEL[kind],
+        event: (athleteId: string, side: Side) => ({
+          type: 'sanction',
+          payload: { side, athleteId, kind },
+        }),
+      })),
+    ],
+    hint: v.hint,
+  };
+}
+
+// ─── Vôlei de quadra ──────────────────────────────────────────────────────────
+
+const indoor = (s: AnyVolleyball) => s as unknown as VolleyballState;
+
+const volleyballTable = makeVolleyballTable({
+  team: 'equipe',
+  canServe: (s, p) => s.serving === p.side,
+  playerExtras: (s, id) => {
+    const p = s.players[id]!;
+    return { onCourt: indoor(s).teams[p.side].onCourt.includes(id) };
+  },
+  extraMeta: (s, side) => [{ label: 'Subst.', value: substitutionsLeft(indoor(s), side) }],
+  extraActions: (s, side) => [
+    {
+      key: 'substitution',
+      label: `Substituição (${substitutionsLeft(indoor(s), side)} restantes no set)`,
+      picker: 'substitution',
+      // Entre sets também: é mudança de formação e não conta no limite.
+      enabled: s.status === 'in_set' || s.status === 'break',
+    },
+  ],
+  setStart: (s, next, teamName) => {
+    const label = `Iniciar ${setLabel(s, next).toLowerCase()}`;
+    return {
+      title: label,
+      submit: label,
+      fields: [
+        {
+          key: 'serving',
+          label: 'Quem saca primeiro',
+          options: serveOrder(s, next).map((side) => ({ value: side, label: teamName(side) })),
+        },
+      ],
+      build: (values) => ({
+        type: 'set_start',
+        payload: { set: next, serving: values['serving'] as Side },
+      }),
+    };
+  },
+  describe: (e, who, teamName, s) => {
+    const num = (id: string) => `#${who(id)?.number ?? '?'}`;
+    if (e.type === 'set_start') {
+      return `Início do ${setLabel(s, e.payload.set).toLowerCase()} · saque ${teamName(e.payload.serving)}`;
+    }
+    if (e.type === 'substitution') {
+      return `Substituição · sai ${num(e.payload.outId)}, entra ${num(e.payload.inId)} (${teamName(e.payload.side)})`;
+    }
+    return null;
+  },
+  notice: (s) => {
+    const current = s.sets[s.set - 1];
+    if (s.status !== 'in_set' || !current || !isTieBreak(s)) return null;
+    const switchAt = sideSwitchAt(indoor(s).rules);
+    return Math.max(current.home, current.away) === switchAt
+      ? `Tie-break: ${switchAt} pontos, as equipes trocam de lado.`
+      : null;
+  },
+  hint: 'O set termina sozinho ao chegar aos pontos do set (com 2 de diferença, se a regra exigir). Ace e erro de saque só para quem saca.',
+});
+
+// ─── Vôlei de praia ───────────────────────────────────────────────────────────
+
+const beach = (s: AnyVolleyball) => s as unknown as BeachState;
+
+const volleyballBeachTable = makeVolleyballTable({
+  team: 'dupla',
+  canServe: (s, p) => s.server === p.athleteId,
+  playerExtras: (s, id) => ({ serving: s.status === 'in_set' && s.server === id }),
+  extraMeta: () => [],
+  extraActions: (s, side) => [
+    {
+      key: 'retirement',
+      label: 'Abandono (lesão): a dupla perde o jogo',
+      draft: { type: 'retirement', payload: { side } },
+      confirm: 'Registrar o abandono? A dupla perde o jogo, conservando os pontos feitos.',
+      enabled: s.status === 'in_set' || s.status === 'break',
+    },
+  ],
+  setStart: (s, next, teamName, athletes) => {
+    const label = `Iniciar ${setLabel(s, next).toLowerCase()}`;
+    return {
+      title: label,
+      submit: label,
+      fields: [
+        {
+          key: 'serving',
+          label: 'Dupla que saca primeiro',
+          options: serveOrder(s, next).map((side) => ({ value: side, label: teamName(side) })),
+        },
+        ...(['home', 'away'] as const).map((side) => ({
+          key: side,
+          label: `1º sacador · ${teamName(side)}`,
+          options: athletes(side).map((a) => ({ value: a.id, label: a.label })),
+        })),
+      ],
+      build: (values) => ({
+        type: 'set_start',
+        payload: {
+          set: next,
+          serving: values['serving'] as Side,
+          firstServer: { home: values['home']!, away: values['away']! },
+        },
+      }),
+    };
+  },
+  describe: (e, who, teamName, s) => {
+    if (e.type === 'set_start' && 'firstServer' in e.payload) {
+      const server = who(e.payload.firstServer[e.payload.serving]);
+      return `Início do ${setLabel(s, e.payload.set).toLowerCase()} · saque ${teamName(e.payload.serving)} (#${server?.number ?? '?'})`;
+    }
+    if (e.type === 'retirement') return `Abandono · ${teamName(e.payload.side)}`;
+    return null;
+  },
+  notice: (s) => {
+    const b = beach(s);
+    if (technicalTimeoutDue(b)) return 'Tempo técnico.';
+    if (sideSwitchDue(b)) return `Troca de lado (a cada ${sideSwitchEvery(b)} pontos).`;
+    return null;
+  },
+  hint: 'O set termina sozinho ao chegar aos pontos do set (com 2 de diferença, se a regra exigir). Ace e erro de saque só para o atleta que está sacando.',
+});
+
 const TABLES: Record<string, SportTable> = {
   basketball: basketballTable,
   basketball_3x3: basketball3x3Table,
+  volleyball: volleyballTable,
+  volleyball_beach: volleyballBeachTable,
 };
 
 export function sportTable(sportKey: string): SportTable {

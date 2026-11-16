@@ -66,6 +66,7 @@ export function SumulaTop({
   /** Cronômetro de posse; ausente junto com o relógio. */
   shotClock?: ReactNode;
 }) {
+  const board = sport.scoreboard(state);
   const team = (side: Side) => (
     <div className={`sm-top__team sm-top__team--${side}`}>
       <span className="sm-top__name">{teamName(side)}</span>
@@ -87,14 +88,15 @@ export function SumulaTop({
       <div className="sm-top__mid">
         <section className="sm-top__center" aria-label="Placar">
           <span className="sm-top__score">
-            <span className="t-score">{state.teams.home.score}</span>
+            <span className="t-score">{board.home}</span>
             <span className="sm-top__sep" aria-hidden="true">
               :
             </span>
             <span className="sr-only"> a </span>
-            <span className="t-score">{state.teams.away.score}</span>
+            <span className="t-score">{board.away}</span>
           </span>
           <span className="sm-top__period t-stat">{sport.phase(state)}</span>
+          {board.detail && <span className="sm-top__detail t-small">{board.detail}</span>}
         </section>
         {clock}
         {shotClock}

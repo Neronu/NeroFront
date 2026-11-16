@@ -1,15 +1,15 @@
 import { isVoidEvent, voidedIds } from '@neronu/sport-core';
 import { useState } from 'react';
 import { Button, Notice, Overlay, SelectField } from '../../../components/ui';
-import { FOUL_LABEL, SPECIAL_FOULS, type SportTable } from '../../../lib/match/sport-table';
+import type { SportTable } from '../../../lib/match/sport-table';
 import type { Draft, SportState, TableEvent, TableSnapshot } from '../../../lib/match/table';
 
 type Side = 'home' | 'away';
 const SIDES: Side[] = ['home', 'away'];
 
 /**
- * Lançamentos fora da linha do atleta: faltas especiais, ações de equipe do esporte (tempo, técnicas),
- * e o histórico com anulação. Ação de quadra, nunca escondida atrás de ícone.
+ * Lançamentos fora da linha do atleta: faltas especiais ou sanções, ações de equipe do esporte
+ * (tempo, técnicas, substituição) e o histórico com anulação. Ação de quadra, nunca escondida atrás de ícone.
  */
 export function MoreSheet({
   open,
@@ -24,6 +24,7 @@ export function MoreSheet({
   send,
   describe,
   onVoid,
+  onPicker,
 }: {
   open: boolean;
   onClose: () => void;
@@ -37,8 +38,12 @@ export function MoreSheet({
   send: (draft: Draft) => boolean;
   describe: (e: TableEvent) => string;
   onVoid: (id: string) => void;
+  /** Abre o seletor de uma ação de equipe (ex.: substituição). */
+  onPicker: (side: Side, picker: 'substitution') => void;
 }) {
   const [athleteId, setAthleteId] = useState('');
+  const { title, actions } = sport.athleteActions;
+  const chosen = sport.players(state).find((p) => p.athleteId === athleteId);
   const active = sport
     .players(state)
     .filter((p) => p.status === 'active')
@@ -60,10 +65,10 @@ export function MoreSheet({
     <Overlay open={open} onClose={onClose} title="Mais lançamentos">
       <div className="ui-stack ui-stack--section">
         {!canRecord && !closed && (
-          <Notice>Inicie o período para lançar faltas e ações de equipe.</Notice>
+          <Notice>Inicie o período para lançar {title.toLowerCase()} e ações de equipe.</Notice>
         )}
         <section className="ui-stack" aria-labelledby="more-fouls">
-          <h3 id="more-fouls">Faltas especiais</h3>
+          <h3 id="more-fouls">{title}</h3>
           <SelectField
             label="Atleta"
             value={athleteId}
@@ -78,14 +83,14 @@ export function MoreSheet({
             ))}
           </SelectField>
           <div className="ui-form-row">
-            {SPECIAL_FOULS.map((kind) => (
+            {actions.map((a) => (
               <Button
-                key={kind}
+                key={a.key}
                 variant="secondary"
-                disabled={!canRecord || !athleteId}
-                onClick={() => run({ type: 'foul', payload: { athleteId, kind } })}
+                disabled={!canRecord || !chosen}
+                onClick={() => chosen && run(a.draft(chosen.athleteId, chosen.side))}
               >
-                {FOUL_LABEL[kind]}
+                {a.label}
               </Button>
             ))}
           </div>
@@ -101,8 +106,11 @@ export function MoreSheet({
                   <Button
                     key={a.key}
                     variant="secondary"
-                    disabled={!canRecord}
-                    onClick={() => run(a.draft)}
+                    disabled={closed || !(a.enabled ?? canRecord)}
+                    onClick={() => {
+                      if (a.picker) onPicker(side, a.picker);
+                      else if (a.draft && (!a.confirm || confirm(a.confirm))) run(a.draft);
+                    }}
                   >
                     {a.label}
                   </Button>

@@ -1,6 +1,8 @@
 import type { MatchStateResponse, PostEventRequest, StoredEvent } from '../api/contract';
 import type { BasketballEvent, BasketballState } from '@neronu/sport-basketball';
 import type { Basketball3x3Event, Basketball3x3State } from '@neronu/sport-basketball-3x3';
+import type { VolleyballEvent, VolleyballState } from '@neronu/sport-volleyball';
+import type { BeachEvent, BeachState } from '@neronu/sport-volleyball-beach';
 import {
   computeState,
   isVoidEvent,
@@ -14,9 +16,9 @@ import { store as defaultStore } from '../storage';
 import { sportOf, type SportOption } from '../sports';
 
 /** Eventos dos esportes que a mesa conhece. O `sportKey` da partida diz qual vale. */
-export type SportEvent = BasketballEvent | Basketball3x3Event;
+export type SportEvent = BasketballEvent | Basketball3x3Event | VolleyballEvent | BeachEvent;
 /** Estado calculado pelo módulo do esporte da partida. */
-export type SportState = BasketballState | Basketball3x3State;
+export type SportState = BasketballState | Basketball3x3State | VolleyballState | BeachState;
 export type TableEvent = SportEvent | VoidEvent;
 export type Draft = Omit<SportEvent, 'id'> | Omit<VoidEvent, 'id'>;
 

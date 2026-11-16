@@ -6,7 +6,13 @@ import { api } from '../../lib/api/client';
 import { resolveTab } from './ChampionshipPage';
 import { NewChampionship } from './NewChampionship';
 import { groupByDay, LIVE_REFRESH_MS, ResultsTab } from './ResultsTab';
-import { projectSide, qualifiesCut, standingColumns, StandingsTab } from './StandingsTab';
+import {
+  formatRatio,
+  projectSide,
+  qualifiesCut,
+  standingColumns,
+  StandingsTab,
+} from './StandingsTab';
 import { StatsTab } from './StatsTab';
 
 const row = (
@@ -404,5 +410,34 @@ describe('colunas da classificação por esporte', () => {
     const keys = (sport: string) => standingColumns(sport).map((c) => c.key);
     expect(keys('basketball')).toContain('diff');
     expect(keys('basketball_3x3')).toEqual(['pos', 'team', 'played', 'won', 'lost', 'pf', 'avg']);
+  });
+
+  it('vôlei mostra sets e razões de sets e de pontos (FIVB)', () => {
+    const cols = standingColumns('volleyball');
+    expect(cols.map((c) => c.key)).toEqual([
+      'pos',
+      'team',
+      'points',
+      'played',
+      'won',
+      'lost',
+      'sw',
+      'sl',
+      'sr',
+      'pf',
+      'pc',
+      'pr',
+    ]);
+    const cell = (key: string, r: StandingRow) => cols.find((c) => c.key === key)!.render(r);
+    const r = row(1, 'A', {
+      extra: { setsWon: 6, setsLost: 0 },
+      pointsFor: 150,
+      pointsAgainst: 120,
+    });
+    expect(cell('sw', r)).toBe(6);
+    expect(cell('sr', r)).toBe('MAX');
+    expect(cell('pr', r)).toBe('1,250');
+    expect(formatRatio(0, 0)).toBe('—');
+    expect(standingColumns('volleyball_beach')).toBe(cols);
   });
 });
