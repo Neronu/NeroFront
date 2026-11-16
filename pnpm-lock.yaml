@@ -18,8 +18,14 @@ importers:
         specifier: 0.1.0
         version: 0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)
       '@neronu/sport-core':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: 1.1.0
+        version: 1.1.0
+      '@neronu/sport-volleyball':
+        specifier: 0.1.0
+        version: 0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)
+      '@neronu/sport-volleyball-beach':
+        specifier: 0.1.0
+        version: 0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)
       lucide-react:
         specifier: ^1.72.0
         version: 1.72.0(@types/react@19.3.0)(react@19.3.1)
@@ -714,15 +720,37 @@ packages:
     peerDependencies:
       '@react-pdf/renderer': ^4.9.0
       react: ^19.0.0
+    peerDependenciesMeta:
+      '@react-pdf/renderer':
+        optional: true
+      react:
+        optional: true
 
   '@neronu/sport-basketball@0.2.0':
     resolution: {integrity: sha512-ulMFzGsi23B50ZcVs8XTup5E5bjPk2Pt9ZOQXt7ch+zJ6ooZ+MhUVbFlwyEij2TlbeJukPnl2Ynt1IUcgINeYQ==, tarball: https://npm.pkg.github.com/download/@neronu/sport-basketball/0.2.0/b6d1734330fd2b08eaad5258fca8e6937b1ec9f8}
     peerDependencies:
       '@react-pdf/renderer': ^4.9.0
       react: ^19.0.0
+    peerDependenciesMeta:
+      '@react-pdf/renderer':
+        optional: true
+      react:
+        optional: true
 
-  '@neronu/sport-core@1.0.0':
-    resolution: {integrity: sha512-V9TjhSa4koV7XN3Y1dXpKVNMG/DPtmPZHRO9Uz+9aoUr+l8Lt4ginGcUZlG9/zyqT5c4+RehcmcdajMQxA53Og==, tarball: https://npm.pkg.github.com/download/@neronu/sport-core/1.0.0/97695de7e15190ea0ee0ce67047a827de5c4c659}
+  '@neronu/sport-core@1.1.0':
+    resolution: {integrity: sha512-/DRtmEvKFvHF1HAr3blanJ0oraeUQzAyK6WPFI3oMjdyGkQjS9rpfkw+IUuaTQBbPymY4gwzBgB5ZwKLyPbQjg==, tarball: https://npm.pkg.github.com/download/@neronu/sport-core/1.1.0/fa2c7164c2985651786c33b7c6c27199f4066d9d}
+
+  '@neronu/sport-volleyball-beach@0.1.0':
+    resolution: {integrity: sha512-bj9lqlOjc8Q4bW5ig6ZhKahi9dtudJEykc0hRyLpeKzaHREWpUn1ciHlF/xGu+lBg/Z9qJFeoKfGy6pjF6IhwA==, tarball: https://npm.pkg.github.com/download/@neronu/sport-volleyball-beach/0.1.0/7b7c72166652d17f52577658c07067ff67ed233a}
+    peerDependencies:
+      '@react-pdf/renderer': ^4.9.0
+      react: ^19.0.0
+
+  '@neronu/sport-volleyball@0.1.0':
+    resolution: {integrity: sha512-nMQgzgVrG9YzWsA7d8wEu2BTPsT1q2HC5XQOrlVNNUyall1uGSPdx7BhE1x8oaAPz3jd+5x7djNE+mslsyQb1g==, tarball: https://npm.pkg.github.com/download/@neronu/sport-volleyball/0.1.0/92d8b6f39ed2de9ad263055f4e54638ddc24f8b6}
+    peerDependencies:
+      '@react-pdf/renderer': ^4.9.0
+      react: ^19.0.0
 
   '@noble/ciphers@1.3.0':
     resolution: {integrity: sha512-2I0gnIVPtfnMw9ee9h1dJG7tp81+8Ob3OJb3Mv37rx5L40/b0i7djjCVvGOVqc9AEIQyvyu1i6ypKdFw8R8gQw==}
@@ -3639,17 +3667,32 @@ snapshots:
 
   '@neronu/sport-basketball-3x3@0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@neronu/sport-core': 1.0.0
+      '@neronu/sport-core': 1.1.0
+    optionalDependencies:
       '@react-pdf/renderer': 4.9.0(react@19.3.1)
       react: 19.3.1
 
   '@neronu/sport-basketball@0.2.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@neronu/sport-core': 1.0.0
+      '@neronu/sport-core': 1.1.0
+    optionalDependencies:
       '@react-pdf/renderer': 4.9.0(react@19.3.1)
       react: 19.3.1
 
-  '@neronu/sport-core@1.0.0': {}
+  '@neronu/sport-core@1.1.0': {}
+
+  '@neronu/sport-volleyball-beach@0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@neronu/sport-core': 1.1.0
+      '@neronu/sport-volleyball': 0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)
+      '@react-pdf/renderer': 4.9.0(react@19.3.1)
+      react: 19.3.1
+
+  '@neronu/sport-volleyball@0.1.0(@react-pdf/renderer@4.9.0(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@neronu/sport-core': 1.1.0
+      '@react-pdf/renderer': 4.9.0(react@19.3.1)
+      react: 19.3.1
 
   '@noble/ciphers@1.3.0': {}
 
